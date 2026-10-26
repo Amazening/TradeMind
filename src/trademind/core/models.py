@@ -123,3 +123,74 @@ class EnrichedHistory(BaseModel):
     fx_to_nzd: dict[str, dict[date, Decimal]]
     missing_prices: list[str]
     data_notes: list[DataNote]
+
+
+PatternResult = Literal["detected", "not_detected", "insufficient_data"]
+Confidence = Literal["low", "medium", "high"]
+
+
+class Evidence(BaseModel):
+    """One piece of support for a finding. `decision_id` is None for a summary line."""
+
+    model_config = ConfigDict(frozen=True)
+
+    decision_id: str | None
+    note: str
+
+
+class FindingSample(BaseModel):
+    """How much data a finding rests on. `cases` counts what the pattern compares."""
+
+    model_config = ConfigDict(frozen=True)
+
+    decisions: int
+    cases: int
+
+
+class Finding(BaseModel):
+    """The result of one pattern check (spec section 6.3).
+
+    `explanation` is filled in later by the AI step. Analysis never sets it.
+    """
+
+    pattern: str
+    title: str
+    result: PatternResult
+    confidence: Confidence | None
+    sample: FindingSample
+    metrics: dict[str, float]
+    threshold: str
+    evidence: list[Evidence]
+    notes: list[str]
+    explanation: str | None = None
+
+
+class ReportPeriod(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    start: date
+    end: date
+
+
+class ReportSummary(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    trades_read: int
+    decisions: int
+    user_decisions: int
+    platform_decisions: int
+    markets: list[str]
+    instruments: int
+
+
+class Report(BaseModel):
+    """The main output of TradeMind (spec section 6.3). Everything else is built from this."""
+
+    schema_version: str
+    generated_at: AwareDatetime
+    broker: str
+    period: ReportPeriod
+    summary: ReportSummary
+    findings: list[Finding]
+    data_notes: list[DataNote]
+    disclaimer: str

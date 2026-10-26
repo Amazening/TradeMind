@@ -49,6 +49,7 @@ def make_trade(
     price: str = "2.00",
     fee: str = "0",
     initiated_by: InitiatedBy = InitiatedBy.USER,
+    currency: str = "AUD",
 ) -> Trade:
     return Trade(
         id=f"row-{n}",
@@ -60,7 +61,7 @@ def make_trade(
         side=side,
         quantity=Decimal(quantity),
         price=Decimal(price),
-        currency="AUD",
+        currency=currency,
         fee=Decimal(fee),
         initiated_by=initiated_by,
     )

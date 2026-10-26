@@ -1,17 +1,19 @@
 """Command line interface. Uses the same layers as the web app."""
 
 from collections import Counter
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
 from trademind import __version__
+from trademind.analysis import analyse as analyse_history
 from trademind.core.decisions import group_into_decisions
 from trademind.core.errors import TradeMindError
 from trademind.core.holdings import Ledger
 from trademind.core.markets import instrument_key
-from trademind.core.models import InitiatedBy, Side
+from trademind.core.models import EnrichedHistory, InitiatedBy, Side
 from trademind.core.settings import get_settings
 from trademind.core.splits import split_label
 from trademind.enrichment import (
@@ -22,6 +24,7 @@ from trademind.enrichment import (
 )
 from trademind.enrichment import enrich as enrich_history
 from trademind.ingestion import import_file
+from trademind.reporting import render_text
 
 app = typer.Typer(help="Find behaviour patterns in a share trading history.", no_args_is_help=True)
 
@@ -88,21 +91,45 @@ def import_(
             )
 
 
+class OutputFormat(StrEnum):
+    JSON = "json"
+    TEXT = "text"
+
+
+def _enriched(path: Path, no_cache: bool) -> EnrichedHistory:
+    source: PriceSource = YahooPriceSource()
+    if not no_cache:
+        source = CachedPriceSource(source, get_settings().price_cache_dir)
+    try:
+        return enrich_history(import_file(path), source)
+    except TradeMindError as error:
+        typer.echo(f"Error ({error.code}): {error}", err=True)
+        raise typer.Exit(code=1) from error
+
+
+@app.command()
+def analyse(
+    path: Annotated[Path, typer.Argument(exists=True, dir_okay=False, readable=True)],
+    output_format: Annotated[
+        OutputFormat, typer.Option("--format", help="json is the full report.")
+    ] = OutputFormat.JSON,
+    no_cache: Annotated[bool, typer.Option(help="Ignore the price cache.")] = False,
+) -> None:
+    """Read a broker CSV and find behaviour patterns in it."""
+    report = analyse_history(_enriched(path, no_cache))
+    if output_format == OutputFormat.TEXT:
+        typer.echo(render_text(report))
+    else:
+        typer.echo(report.model_dump_json(indent=2))
+
+
 @app.command()
 def enrich(
     path: Annotated[Path, typer.Argument(exists=True, dir_okay=False, readable=True)],
     no_cache: Annotated[bool, typer.Option(help="Ignore the price cache.")] = False,
 ) -> None:
     """Read a broker CSV, add market prices, and print how well each share is covered."""
-    source: PriceSource = YahooPriceSource()
-    if not no_cache:
-        source = CachedPriceSource(source, get_settings().price_cache_dir)
-
-    try:
-        history = enrich_history(import_file(path), source)
-    except TradeMindError as error:
-        typer.echo(f"Error ({error.code}): {error}", err=True)
-        raise typer.Exit(code=1) from error
+    history = _enriched(path, no_cache)
 
     ratios = price_consistency(history)
     typer.echo(f"Trades: {len(history.trades)}   Decisions: {len(history.decisions)}")

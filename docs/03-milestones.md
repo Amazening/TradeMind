@@ -83,10 +83,15 @@ M0 to M3 give a working tool from the command line. M4 to M8 turn it into a publ
 - CLI: `trademind analyse <file> --format json`.
 - Tests for each pattern: detected, not detected and not enough data.
 
+- Also built: a text report (`--format text`) in the reporting layer, and the standard-library statistics tests (no SciPy).
+
 **Done when:**
-- [ ] All tests pass.
+- [x] All tests pass (2026-10-26: 143 tests, Ruff and mypy clean). Each pattern has a detected, not-detected and not-enough-data scenario worked out by hand.
 - [ ] Mazen runs it on his own data and the results make sense to him. Anything surprising gets checked by hand against the trades.
-- [ ] Any threshold change is written into section 5 with the reason.
+- [x] Any threshold change is written into section 5 with the reason. The one addition is the NZ$500 minimum for overtrading months.
+
+**Checks made on Mazen's real data (2026-10-26):**
+- Portfolio values computed from the trades and Yahoo prices (including exchange rates) were within a few percent of Mazen's own records.
 
 This is the first point where TradeMind is useful. A good place to pause and decide whether the patterns are worth showing to others.
 

@@ -143,21 +143,23 @@ Only user decisions are judged. Platform trades are left out.
 
 **Question:** does the user trade a large share of their portfolio each year?
 
-**Measure:** yearly turnover, as used by Barber and Odean.
-- For each month, sell turnover = value of user sells in the month ÷ portfolio value at the start of the month. Buy turnover is the same with user buys.
-- Monthly turnover = the average of sell turnover and buy turnover.
+**Measure:** monthly turnover, as defined by Barber and Odean (checked against the paper on 2026-10-26).
+- For each month, purchase turnover = value of the user's buys in the month ÷ portfolio value at the start of the month. Sales turnover is the same with the user's sells. The paper reports the two separately (means of 6.49% and 6.23% a month).
+- Monthly turnover = the average of purchase turnover and sales turnover.
 - Yearly turnover = average monthly turnover × 12.
-- Portfolio value is worked out from holdings × closing prices, converted to NZD.
-- Check against the paper before building: confirm this matches how Barber and Odean define turnover.
+- Portfolio value is holdings × closing prices, converted to NZD. Platform trades count towards holdings. Shares without market prices are valued at the last own trade price.
+- Differences from the paper: trades are valued at the trade price (the paper uses the start-of-month price), and months that start with a portfolio under NZ$500 are left out. A new investor adding money to a tiny portfolio shows huge turnover that says nothing about trading habits. Months are calendar months by market date, and the start-of-month holdings use UTC month boundaries.
 
 **Result:**
-- Not enough data: fewer than 6 months with holdings, or fewer than 10 user decisions.
+- Not enough data: fewer than 6 months with a portfolio of NZ$500 or more, or fewer than 10 user decisions in those months.
 - Detected: average monthly turnover above 8.8% (about 105% a year).
 - Not detected: otherwise.
 
-**Context shown:** Barber and Odean studied 66,465 US households from 1991 to 1996. The average household turned over more than 75% of its portfolio a year. Households with monthly turnover above 8.8% earned 11.4% a year after costs, against 18.5% for those that traded least. The 8.8% threshold is taken from their split.
+**Context shown:** Barber and Odean studied 66,465 US households from 1991 to 1996. The average household turned over more than 75% of its portfolio a year. The paper calls households with monthly turnover above 8.8% frequent traders. They earned 11.4% a year after costs, against 18.5% for those that traded least. The most active fifth averaged more than 250% a year. The 8.8% threshold is taken from this.
 
-**Evidence:** the 3 months with the highest turnover, and their trades.
+**Limit:** turnover does not say why someone traded. Selling a share that fails a halal screen, moving between brokers, and rebalancing all count as turnover. The report states what happened and does not claim a motive.
+
+**Evidence:** the 3 months with the highest turnover, and the 5 largest decisions in each.
 
 ### 5.2 Disposition Effect
 
@@ -175,10 +177,17 @@ Only user decisions are judged. Platform trades are left out.
 
 **Result:**
 - Not enough data: fewer than 10 sell decisions, or fewer than 5 gain cases or 5 loss cases in total.
-- Detected: PGR is greater than PLR and the difference passes a two-proportion test at the 5% level.
+- Detected: PGR is greater than PLR and the difference passes a one-sided two-proportion z-test (pooled) at the 5% level.
 - Not detected: otherwise.
 
-**Evidence:** the sells of shares that were up, next to shares that were down and held on the same days.
+**Details:**
+- "Held" means held at the start of the market day. A share bought and sold on the same day has no earlier cost, so it is not counted. A sale at exactly the average cost is neither a gain nor a loss.
+- Average cost is the running average from the holdings helper, including buy fees.
+- Shares without market prices are left out completely, both their sales and their paper results. Counting their sales without their paper results would bias the result. The finding names them in its notes.
+
+**Limit:** a paper gain or loss is counted again on every sell day, so observations are not independent and the p-value is more optimistic than it looks. Odean's test has the same limit. Forced sales, such as selling a share that fails a halal screen, also count.
+
+**Evidence:** the 5 sales with the biggest gain and the 5 with the biggest loss, each with how far above or below the average cost it was sold.
 
 ### 5.3 Buying After a Run-Up
 
@@ -192,10 +201,18 @@ Only user decisions are judged. Platform trades are left out.
 
 **Result:**
 - Not enough data: fewer than 15 buy decisions with a full year of prior prices.
-- Detected: run-up share is significantly above 10% (one-sided binomial test at the 5% level).
+- Detected: run-up share is significantly above 10% (one-sided exact binomial test at the 5% level).
 - Not detected: otherwise.
 
-**Evidence:** the run-up buys, with the 20-day rise before each one.
+**Details:**
+- "The previous 20 trading days" ends on the last close before the buy day, so the buy price itself is never used. Trading days are the bars in the price series.
+- The comparison set is every 20-day return ending in the 365 days before the buy. A buy needs at least 200 of them, about 80% of a trading year. Otherwise it is not counted.
+- A return that ties with others is in the top 10% only if 10% or fewer of the comparison returns are at least as large. A flat price therefore never produces a run-up.
+- Shares without market prices are left out, and the finding names them in its notes.
+
+**Limit:** buys of the same share close together share the same price history, so they are not independent.
+
+**Evidence:** the 10 run-up buys with the biggest rise, with the 20-day rise before each one.
 
 ### 5.4 Confidence
 
@@ -276,7 +293,7 @@ This is the main output of TradeMind.
   "schema_version": "1.0",
   "generated_at": "2026-10-24T10:00:00Z",
   "broker": "sharesies",
-  "period": { "from": "2024-03-04", "to": "2025-01-31" },
+  "period": { "start": "2024-03-04", "end": "2025-01-31" },
   "summary": {
     "trades_read": 0,
     "decisions": 0,
@@ -295,8 +312,10 @@ This is the main output of TradeMind.
       "metrics": { "pgr": 0.0, "plr": 0.0, "score": 0.0, "p_value": 0.0 },
       "threshold": "PGR above PLR, p < 0.05",
       "evidence": [
-        { "decision_id": "d-7", "note": "Sold while up 18% on cost" }
+        { "decision_id": "d-7", "note": "Sold on 2024-03-14, 18.0% above your average cost" },
+        { "decision_id": null, "note": "A summary line that is not one decision" }
       ],
+      "notes": ["Shares without market prices were left out: ..."],
       "explanation": null
     }
   ],
@@ -364,7 +383,8 @@ Must work on a phone screen. Must meet basic accessibility: labels on inputs, ke
 | Web API | FastAPI | Typed, generates API docs, already known |
 | Data models | Pydantic v2 | Checks every contract between layers |
 | Data handling | pandas | Price series and date maths |
-| Statistics | SciPy | Binomial and two-proportion tests |
+| Statistics | Python standard library (`math`) | The two tests needed (normal tail and exact binomial tail) are a few lines each. This avoids SciPy and its size |
+| Data handling | Plain Python with `Decimal` | pandas was in the first proposal. Money needs exact numbers, and the data is small. Add pandas only if a real need appears |
 | CLI | Typer | Small, built on the same type hints |
 | Tests | pytest | Standard |
 | Lint and format | Ruff | One fast tool for both |
