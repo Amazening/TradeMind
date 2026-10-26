@@ -1,0 +1,23 @@
+# Personal trade data. Never commit.
+data/private/
+
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Cached market prices
+.cache/
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
