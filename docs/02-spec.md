@@ -122,6 +122,7 @@ What the test showed about the data itself:
 - Decide the launch provider at the launch milestone, not now. Candidates: a paid EODHD plan (ASX and US, correct splits) plus a second source for NZX, or a paid Twelve Data plan. Check delisted coverage and the licence for showing results to users before paying.
 - Every provider gets checked against the same test set (the 6 cases above), so data gaps like Marketstack's show up before they reach a report.
 - Delisted shares with no price data: use the user's own trade prices as the only price points, run only the patterns that work with them, and add a data note.
+- Price check (added after testing on real data): for each share, the median of (trade price / market close on the same day) must be between 0.8 and 1.25. If not, the market prices are rejected and the share is treated like one with no prices. Yahoo's prices for one share were about 1.7 times too low before a consolidation, because of an adjustment Yahoo did not list as a split. Sharesies exports trades on the old, unadjusted basis, so trades before a split are rescaled to match.
 
 - [x] Test providers with free keys (2026-10-24). Results above.
 - [ ] Pick the paid provider for the public launch (at the launch milestone).

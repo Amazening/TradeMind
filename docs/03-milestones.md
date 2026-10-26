@@ -62,13 +62,16 @@ M0 to M3 give a working tool from the command line. M4 to M8 turn it into a publ
 - Delisted shares: fall back to the user's own trade prices, and add a data note.
 - Exchange rates to NZD.
 - `EnrichedHistory` model (section 6.2).
-- A check script that runs the 6 test cases from section 4.2 against any provider.
+- A price check inside `enrich`: for every share, the median of (trade price / market close on the same day). If it is outside 0.8 to 1.25, the market prices are not used, and the share falls back to own trade prices with a note. This replaces the separate check script, and tests any provider against real trades.
+- CLI: `trademind enrich <file>` prints coverage, the price check and the data notes for each instrument.
 
 **Done when:**
-- [ ] All tests pass, with no internet calls in tests.
-- [ ] Mazen's file enriches without errors. The delisted ASX share shows as delisted with a data note.
-- [ ] A share consolidation is adjusted: no fake 2,400% jump.
-- [ ] A second run uses the cache and makes no network calls.
+- [x] All tests pass, with no internet calls in tests (2026-10-26: 99 tests, Ruff and mypy clean).
+- [x] Mazen's file enriches without errors. The delisted ASX share shows as delisted with a data note.
+- [x] The consolidations are adjusted. Two consolidations were found and the trade prices now agree with the market (ratio 1.00 to 1.01).
+- [x] A second run uses the cache and makes no network calls (1 second, against 18 seconds the first time).
+
+**Found while testing on real data (2026-10-26):** Yahoo's prices for one share that had a consolidation are about 1.7 times too low before the consolidation, on both its listings. It looks like Yahoo applied a second adjustment (probably for a capital raising) that it does not list as a split. The price check caught it, and that share now uses own trade prices only. This is a reason to compare any new provider against real trades before trusting it.
 
 ## M3: Patterns
 

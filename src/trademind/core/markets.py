@@ -17,6 +17,11 @@ MARKET_TIMEZONES: dict[str, ZoneInfo] = {
 }
 
 
+def instrument_key(market: str, symbol: str) -> str:
+    """The same share on two markets is two instruments, so the key has both."""
+    return f"{market}:{symbol}"
+
+
 def is_known_market(market: str) -> bool:
     return market in MARKET_TIMEZONES
 

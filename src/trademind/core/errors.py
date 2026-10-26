@@ -15,3 +15,9 @@ class NoTradesError(TradeMindError):
 
 class UnknownMarketError(TradeMindError):
     code = "unknown_market"
+
+
+class PriceSourceError(TradeMindError):
+    """The market data service failed (network down, rate limited, bad reply)."""
+
+    code = "price_source_error"

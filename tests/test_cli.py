@@ -1,10 +1,14 @@
+from datetime import date
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
+from tests.fakes import FakePriceSource, daily
 from tests.helpers import sharesies_csv, sharesies_row
 from trademind import __version__
 from trademind.cli import app
+from trademind.enrichment import PriceHistory
 
 runner = CliRunner()
 
@@ -66,6 +70,29 @@ def test_import_reports_unrecognised_files(tmp_path: Path) -> None:
 
     assert result.exit_code == 1
     assert "unrecognised_broker" in result.output
+
+
+def test_enrich_prints_coverage_and_notes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = FakePriceSource(
+        {"ASX:AAA": PriceHistory(currency="AUD", closes=daily(date(2023, 1, 1), 800), splits=[])}
+    )
+    monkeypatch.setattr("trademind.cli.YahooPriceSource", lambda: fake)
+    file = tmp_path / "trades.csv"
+    file.write_text(
+        sharesies_csv(
+            sharesies_row("T1", "2024-03-04 02:00:00 (UTC)", price="2.00"),
+            sharesies_row("T2", "2024-03-05 02:00:00 (UTC)", code="GONE", price="1.00"),
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["enrich", str(file), "--no-cache"])
+
+    assert result.exit_code == 0
+    assert "Instruments with market prices: 1" in result.stdout
+    assert "Instruments without: 1" in result.stdout
+    assert "ASX:AAA" in result.stdout
+    assert "No market prices for ASX:GONE" in result.stdout
 
 
 def test_import_missing_file_is_an_error() -> None:

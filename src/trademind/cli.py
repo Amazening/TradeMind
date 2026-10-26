@@ -10,7 +10,17 @@ from trademind import __version__
 from trademind.core.decisions import group_into_decisions
 from trademind.core.errors import TradeMindError
 from trademind.core.holdings import Ledger
+from trademind.core.markets import instrument_key
 from trademind.core.models import InitiatedBy, Side
+from trademind.core.settings import get_settings
+from trademind.core.splits import split_label
+from trademind.enrichment import (
+    CachedPriceSource,
+    PriceSource,
+    YahooPriceSource,
+    price_consistency,
+)
+from trademind.enrichment import enrich as enrich_history
 from trademind.ingestion import import_file
 
 app = typer.Typer(help="Find behaviour patterns in a share trading history.", no_args_is_help=True)
@@ -76,3 +86,47 @@ def import_(
                 f"  {market}:{symbol}  {position.quantity.normalize():f} shares  "
                 f"avg cost {position.avg_cost:.4f}"
             )
+
+
+@app.command()
+def enrich(
+    path: Annotated[Path, typer.Argument(exists=True, dir_okay=False, readable=True)],
+    no_cache: Annotated[bool, typer.Option(help="Ignore the price cache.")] = False,
+) -> None:
+    """Read a broker CSV, add market prices, and print how well each share is covered."""
+    source: PriceSource = YahooPriceSource()
+    if not no_cache:
+        source = CachedPriceSource(source, get_settings().price_cache_dir)
+
+    try:
+        history = enrich_history(import_file(path), source)
+    except TradeMindError as error:
+        typer.echo(f"Error ({error.code}): {error}", err=True)
+        raise typer.Exit(code=1) from error
+
+    ratios = price_consistency(history)
+    typer.echo(f"Trades: {len(history.trades)}   Decisions: {len(history.decisions)}")
+    typer.echo(
+        f"Instruments with market prices: {len(history.prices) - len(history.missing_prices)}"
+    )
+    typer.echo(f"Instruments without: {len(history.missing_prices)}")
+    typer.echo(f"Currencies converted to NZD: {', '.join(sorted(history.fx_to_nzd)) or 'none'}")
+    typer.echo("")
+    typer.echo("Per instrument (trade price / market close, median; 1.00 means they agree):")
+    for key in sorted(history.prices):
+        series = history.prices[key]
+        trade_count = sum(
+            1 for trade in history.trades if instrument_key(trade.market, trade.symbol) == key
+        )
+        days = sorted(series.closes)
+        coverage = f"{len(days)} days {days[0]} to {days[-1]}"
+        ratio = f"{ratios[key]:.2f}" if key in ratios else "n/a"
+        splits = ", ".join(f"{s.date} {split_label(s)}" for s in history.splits.get(key, []))
+        typer.echo(
+            f"  {key:<12} {trade_count:>4} trades  {series.source:<10}  {coverage}  "
+            f"ratio {ratio}" + (f"  splits: {splits}" if splits else "")
+        )
+    typer.echo("")
+    typer.echo(f"Data notes: {len(history.data_notes)}")
+    for note in history.data_notes:
+        typer.echo(f"  [{note.level}] {note.message}")
