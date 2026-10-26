@@ -1,0 +1,7 @@
+# Always use Unix line endings, including on Windows. A Dockerfile or script with Windows line
+# endings can fail on Linux, and mixed endings make every diff noisy.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
