@@ -385,12 +385,26 @@ Interactive docs are at `/api/docs`, and the OpenAPI file at `/api/openapi.json`
 
 ## 9. Frontend
 
-Three screens:
-1. **Upload:** what it does, privacy note, export steps per broker, drop zone, Analyse button.
-2. **Progress:** the four steps, with the current one marked. Polls `GET /api/analyses/{id}`.
-3. **Report:** summary, finding cards, data notes, disclaimer, Download JSON button, Delete my data button.
+Built with React and TypeScript on Vite (`frontend/`). The API serves the built files, so there is one thing to deploy.
 
-Must work on a phone screen. Must meet basic accessibility: labels on inputs, keyboard use, enough colour contrast.
+Three screens, plus a failure screen:
+1. **Upload:** what it does, the three habits it looks for, a privacy note, export steps per broker, drop zone, Analyse button. A bad file (not `.csv`, empty, over 5 MB) is refused before it is sent. A file the server refuses shows the server's message.
+2. **Progress:** the four steps, each marked done, in progress or waiting, in words as well as by look. Polls `GET /api/analyses/{id}` every second. A check that fails once is tried again. Three in a row, or a `404` (expired), ends in the failure screen.
+3. **Report:** the period and trade counts, one card per finding, data notes (warnings first), the disclaimer, Download report (JSON), Check another file, and Delete my data (asks first).
+4. **Failure:** the reason in plain words, and Try again.
+
+**A finding card shows:** the title, a result label (Found, Not found or Not enough data, never "good" or "bad"), confidence, the explanation and who wrote it (`AI` or `TradeMind`), the key numbers, the basis and rule, and the trades behind it in a closed section. The explanation is shown one fact per line when the tool wrote it.
+
+**Accessibility** (checked by tests and in a real browser):
+- Every input has a label. The whole flow works with the keyboard alone. There is a skip link, and focus moves to the new screen's heading when a screen changes. It does not move on the first load, so the skip link stays reachable.
+- Status is given in words, not only colour. Errors use `role="alert"` and the progress step is announced.
+- Text contrast is at least 4.5:1 in both the light and dark themes (the lowest is 6.8:1), and focus rings are at least 3:1. A test reads the colours from the stylesheet and fails if a change breaks this.
+- Works at phone width with no sideways scrolling. Respects the reduced motion setting.
+- Automatic checks with axe find no problems. Axe cannot check contrast in a test browser, so contrast has its own test.
+
+**Security:** the built page loads only files from its own site. There are no inline scripts or styles (see the Content Security Policy in section 8), and the page cannot be put in a frame.
+
+**Known limits:** the page text is English only. There is no sign-in, by design.
 
 ## 10. Non-Functional Requirements
 

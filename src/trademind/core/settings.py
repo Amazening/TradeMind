@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     groq_model: str = "llama-3.1-8b-instant"
     ollama_url: str = "http://localhost:11434"
     ollama_model: str = "qwen2.5:14b"
+    frontend_dir: Path = Path("frontend/dist")
     price_cache_dir: Path = Path(".cache/prices")
     explanation_cache_dir: Path = Path(".cache/explanations")
 

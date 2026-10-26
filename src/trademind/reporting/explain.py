@@ -204,8 +204,8 @@ def _allowed_numbers(finding: Finding, facts_text: str) -> list[float]:
 
 
 def tool_text(finding: Finding) -> str:
-    """The facts as one paragraph. Written by code, so it is always correct."""
-    return " ".join(facts_for(finding))
+    """The facts, one per line. Written by code, so it is always correct."""
+    return "\n".join(facts_for(finding))
 
 
 def not_enough_data_text(finding: Finding) -> str:

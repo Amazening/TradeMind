@@ -21,3 +21,8 @@ venv/
 Thumbs.db
 .vscode/
 .idea/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+

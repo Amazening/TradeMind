@@ -16,11 +16,13 @@ import logging
 import time
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 from fastapi import BackgroundTasks, FastAPI, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from trademind import __version__
@@ -52,6 +54,7 @@ def create_app(
     ttl: timedelta = timedelta(hours=1),
     max_jobs: int = 50,
     now: Callable[[], datetime] = lambda: datetime.now(UTC),
+    static_dir: Path | None = None,
 ) -> FastAPI:
     app = FastAPI(
         title="TradeMind",
@@ -100,19 +103,11 @@ def create_app(
         )
 
     @app.middleware("http")
-    async def limit_body_and_cache(
+    async def limit_body_and_add_headers(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        if request.method == "POST":
-            declared = request.headers.get("content-length")
-            if declared is None or not declared.isdigit():
-                return _error(411, "length_required", "The upload must say how big it is.")
-            if int(declared) > max_upload_bytes + _BODY_SLACK_BYTES:
-                return _too_large(max_upload_bytes)
-        response = await call_next(request)
-        if request.url.path.startswith("/api/analyses"):
-            response.headers["Cache-Control"] = "no-store"
-        return response
+        response = await _guarded(request, call_next, max_upload_bytes)
+        return _with_headers(response, request.url.path)
 
     @app.exception_handler(RequestValidationError)
     async def invalid_request(request: Request, error: RequestValidationError) -> Response:
@@ -173,7 +168,42 @@ def create_app(
     def health() -> dict[str, str]:
         return {"status": "ok", "version": __version__}
 
+    # The built frontend. Mounted last so the API routes above take priority.
+    if static_dir is not None and (static_dir / "index.html").is_file():
+        app.mount("/", StaticFiles(directory=static_dir, html=True), name="frontend")
+
     return app
+
+
+async def _guarded(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]], max_upload_bytes: int
+) -> Response:
+    """Refuses an upload that is too big, or that does not say its size, before it is read."""
+    if request.method == "POST":
+        declared = request.headers.get("content-length")
+        if declared is None or not declared.isdigit():
+            return _error(411, "length_required", "The upload must say how big it is.")
+        if int(declared) > max_upload_bytes + _BODY_SLACK_BYTES:
+            return _too_large(max_upload_bytes)
+    return await call_next(request)
+
+
+# Only files from this site. No inline scripts or styles, nothing from other sites, and the page
+# cannot be put in a frame.
+_CSP = (
+    "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
+    "connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+)
+
+
+def _with_headers(response: Response, path: str) -> Response:
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    if not path.startswith("/api/docs"):  # the interactive docs load scripts from a CDN
+        response.headers["Content-Security-Policy"] = _CSP
+    if path.startswith("/api/analyses"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 def _job_json(job: Job) -> dict[str, Any]:

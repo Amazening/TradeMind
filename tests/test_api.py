@@ -1,6 +1,7 @@
 import logging
 from collections.abc import Iterator
 from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -118,6 +119,92 @@ def test_the_api_docs_list_every_endpoint(client: TestClient) -> None:
     assert set(paths["/api/analyses/{job_id}"]) == {"get", "delete"}
     assert "/api/health" in paths
     assert client.get("/api/docs").status_code == 200
+
+
+# --- the frontend and security headers ----------------------------------------------------
+
+
+@pytest.fixture
+def site(tmp_path: Path) -> Path:
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "index.html").write_text(
+        "<!doctype html><title>TradeMind</title>", encoding="utf-8"
+    )
+    (tmp_path / "assets" / "app.js").write_text("console.log('hi')", encoding="utf-8")
+    return tmp_path
+
+
+def test_the_built_frontend_is_served_from_the_root(site: Path) -> None:
+    client = _client(static_dir=site)
+
+    page = client.get("/")
+    script = client.get("/assets/app.js")
+
+    assert page.status_code == 200
+    assert "<title>TradeMind</title>" in page.text
+    assert script.status_code == 200
+    assert "console.log" in script.text
+
+
+def test_the_api_still_wins_over_the_frontend(site: Path) -> None:
+    client = _client(static_dir=site)
+
+    assert client.get("/api/health").json()["status"] == "ok"
+    assert _upload(client).status_code == 202
+
+
+def test_a_missing_file_is_a_json_not_found(site: Path) -> None:
+    response = _client(static_dir=site).get("/assets/missing.js")
+
+    assert response.status_code == 404
+    assert _error(response)["code"] == "not_found"
+
+
+def test_files_outside_the_frontend_folder_cannot_be_read(
+    site: Path, tmp_path_factory: Any
+) -> None:
+    secret = tmp_path_factory.mktemp("elsewhere") / "secret.txt"
+    secret.write_text("hunter2", encoding="utf-8")
+    client = _client(static_dir=site)
+
+    for path in ("/../secret.txt", "/%2e%2e/secret.txt", "/assets/../../secret.txt"):
+        assert "hunter2" not in client.get(path).text
+
+
+def test_there_is_no_frontend_when_the_folder_has_no_index(tmp_path: Path) -> None:
+    client = _client(static_dir=tmp_path)
+
+    assert client.get("/").status_code == 404
+    assert client.get("/api/health").status_code == 200
+
+
+def test_responses_carry_security_headers(client: TestClient) -> None:
+    response = client.get("/api/health")
+
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["referrer-policy"] == "no-referrer"
+    policy = response.headers["content-security-policy"]
+    assert "default-src 'self'" in policy
+    assert "frame-ancestors 'none'" in policy
+    assert "unsafe-inline" not in policy
+
+
+def test_refused_uploads_carry_the_headers_too() -> None:
+    client = _client(max_upload_bytes=1000)
+
+    response = _upload(client, "x" * 200_000)
+
+    assert response.status_code == 413
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["cache-control"] == "no-store"
+
+
+def test_the_interactive_docs_are_not_blocked_by_the_policy(client: TestClient) -> None:
+    response = client.get("/api/docs")
+
+    assert response.status_code == 200
+    assert "content-security-policy" not in response.headers
+    assert response.headers["x-content-type-options"] == "nosniff"
 
 
 # --- deleting and expiring ----------------------------------------------------------------

@@ -134,11 +134,17 @@ This is the first point where TradeMind is useful. A good place to pause and dec
 - Sharesies export steps on the upload screen.
 - The FastAPI app serves the built frontend.
 
+- Security headers on every response (Content Security Policy, no sniffing, no referrer, no framing).
+- CI: a frontend job that type checks, lints, tests and builds.
+
 **Done when:**
-- [ ] The full flow works locally with Mazen's file.
-- [ ] It works on a phone screen.
-- [ ] Every error case from section 1.2 shows the right message.
-- [ ] Keyboard-only use works, and colour contrast passes.
+- [x] The full flow works locally. Tested in a real browser against the real server with live market prices: upload, progress, report, download link and delete. The test file had made-up trades, because the browser cannot read files from disk. Mazen's real export has been run through the same API with curl (M5), and through the CLI.
+- [x] It works on a phone screen (375 px wide, light and dark mode): no sideways scrolling, a 16 px gutter, buttons at least 44 px high.
+- [x] Every error case from section 1.2 shows the right message: bad file type, empty file and too big (checked in the page), unrecognised broker and no trades (the server's message, which never repeats the file), skipped rows and missing prices (data notes), market data down (failure screen), AI down (the tool's own text), network down (retries, then the failure screen).
+- [x] Keyboard-only use works, and colour contrast passes. A keyboard test covers the skip link, the file field and Enter on the button. A Python test measures every text colour pair in both themes. The keyboard test found a real problem: focus jumped to the heading on first load, so the skip link was skipped. Fixed.
+- [x] 65 frontend tests and 267 backend tests pass. Type check, ESLint, Ruff and mypy are clean.
+
+**Left for Mazen:** try it with his own export in his own browser (`uv run trademind serve` after `npm run build` in `frontend/`), and look at it on a real phone.
 
 ## M7: Deploy
 

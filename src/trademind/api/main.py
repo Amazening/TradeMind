@@ -36,4 +36,9 @@ def build_app() -> FastAPI:
         logger.info("Explanations: AI (%s), with the tool's own text as the fallback.", model.name)
     else:
         logger.info("No GROQ_API_KEY set: explanations are written by the tool, not by AI.")
-    return create_app(price_source=source, chat_model=model)
+    if not (settings.frontend_dir / "index.html").is_file():
+        logger.info(
+            "No built frontend at %s. Only the API is served. Run `npm run build` in frontend/.",
+            settings.frontend_dir,
+        )
+    return create_app(price_source=source, chat_model=model, static_dir=settings.frontend_dir)

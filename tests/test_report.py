@@ -83,6 +83,15 @@ def test_text_report_shows_results_notes_and_disclaimer() -> None:
     assert text.endswith(DISCLAIMER)
 
 
+def test_a_multi_line_explanation_is_indented_on_every_line() -> None:
+    report = _report()
+    report.findings[0].explanation = "First fact.\nSecond fact."
+
+    text = render_text(report)
+
+    assert "\n  First fact.\n  Second fact.\n" in text
+
+
 def test_text_report_shows_an_explanation_when_there_is_one() -> None:
     report = _report()
     report.findings[0].explanation = "You traded a lot."

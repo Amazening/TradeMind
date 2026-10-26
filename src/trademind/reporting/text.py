@@ -42,7 +42,7 @@ def _finding_lines(finding: Finding) -> list[str]:
             "  " + ", ".join(f"{name} {value:g}" for name, value in finding.metrics.items())
         )
     if finding.explanation:
-        lines.append(f"  {finding.explanation}")
+        lines.extend(f"  {line}" for line in finding.explanation.splitlines())
     lines.extend(f"  Note: {note}" for note in finding.notes)
     if finding.evidence:
         lines.append("  Evidence:")
