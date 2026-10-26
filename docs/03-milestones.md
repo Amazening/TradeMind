@@ -48,9 +48,9 @@ M0 to M3 give a working tool from the command line. M4 to M8 turn it into a publ
 - Hand-made test CSVs: normal trades, split fills, platform trades, a transfer out, bad rows.
 
 **Done when:**
-- [ ] All tests pass.
-- [ ] Running it on Mazen's file gives row and trade counts that match a manual count in a spreadsheet.
-- [ ] Holdings after the last trade match what Sharesies shows (Mazen checks).
+- [x] All tests pass (2026-10-26: 47 tests, Ruff and mypy clean).
+- [x] Running it on Mazen's file gives row and trade counts that match a manual count, a date range and an instrument count that match a manual count of the file, with no rows skipped.
+- [ ] Holdings after the last trade match what Sharesies shows (Mazen checks with `uv run trademind import data/private/sharesies-transactions.csv --holdings`).
 
 ## M2: Market Prices
 

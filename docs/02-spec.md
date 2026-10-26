@@ -74,7 +74,9 @@ Facts found in a real export:
 - **Trade time:** parse as UTC. For daily price lookups, use the trade's date in the market's own time zone (Sydney for ASX, Auckland for NZX, New York for US markets).
 - **Side:** `BUY` → buy, `SELL` → sell, `TRANSFER OUT` → transfer out. Any other value → skip the row with a data note.
 - **Who decided:** "Initiated by" `System` or `Operator` → `initiated_by = platform`. Everything else → `user`.
-- **Decisions vs fills:** rows for the same share, same side and same market date are one **decision**. Patterns count decisions, not rows. Holdings and cost use every row.
+- **Decisions vs fills:** rows for the same share, same side, same market date and same initiator (the user, or the platform) are one **decision**. Transfers out are not decisions. Patterns count decisions, not rows. Holdings and cost use every row.
+- **Unknown rows:** a row with an unknown method, an unknown market, a bad number or a bad date is skipped, with its row number and reason in `skipped_rows`. The rest of the file still loads.
+- **Selling more than held:** the position goes to zero and a warning is shown. It means the history is missing earlier buys or transfers in.
 - **Platform trades:** count towards holdings and cost, but are left out when judging the user's behaviour.
 - **Transfers out:** remove shares from holdings at cost. Not counted as a sale.
 - **Cost basis:** average cost per share, per instrument. Fees are added to the cost of buys and taken off the proceeds of sells.
