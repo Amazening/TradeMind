@@ -26,6 +26,26 @@ class FakePriceSource:
         return self.fx.get(currency)
 
 
+class FakeChatModel:
+    """A text model with scripted replies. A reply that is an exception is raised.
+
+    When the script runs out, the last reply is used again.
+    """
+
+    name = "fake:model"
+
+    def __init__(self, replies: list[str | Exception]) -> None:
+        self.replies = replies
+        self.calls: list[tuple[str, str]] = []
+
+    def complete(self, system: str, user: str) -> str:
+        self.calls.append((system, user))
+        reply = self.replies[min(len(self.calls), len(self.replies)) - 1]
+        if isinstance(reply, Exception):
+            raise reply
+        return reply
+
+
 def daily(start: date, days: int, price: str = "2.00") -> dict[date, Decimal]:
     """`days` consecutive calendar days of the same close, starting at `start`."""
     from datetime import timedelta

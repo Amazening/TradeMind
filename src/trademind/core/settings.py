@@ -14,7 +14,11 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     groq_api_key: SecretStr | None = None
+    groq_model: str = "llama-3.1-8b-instant"
+    ollama_url: str = "http://localhost:11434"
+    ollama_model: str = "qwen2.5:14b"
     price_cache_dir: Path = Path(".cache/prices")
+    explanation_cache_dir: Path = Path(".cache/explanations")
 
 
 @lru_cache

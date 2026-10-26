@@ -71,6 +71,7 @@ def test_every_finding_has_the_fields_the_spec_lists() -> None:
             "evidence",
             "notes",
             "explanation",
+            "explained_by",
         }
 
 
@@ -113,6 +114,41 @@ def test_cli_analyse_prints_the_json_report(
     report = Report.model_validate_json(result.stdout)
     assert report.summary.trades_read == 1
     assert len(report.findings) == 3
+
+
+def test_cli_explain_with_groq_needs_a_key(
+    trades_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from trademind.core.settings import Settings
+
+    monkeypatch.setattr("trademind.cli.get_settings", lambda: Settings(_env_file=None))
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+
+    result = CliRunner().invoke(app, ["analyse", str(trades_file), "--explain", "groq"])
+
+    assert result.exit_code == 1
+    assert "GROQ_API_KEY" in result.output
+
+
+def test_cli_explain_adds_explanations(
+    trades_file: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from tests.fakes import FakeChatModel
+    from trademind.core.settings import Settings
+
+    monkeypatch.setattr("trademind.cli.YahooPriceSource", lambda: FakePriceSource())
+    monkeypatch.setattr("trademind.cli._chat_model", lambda choice: FakeChatModel(["x"]))
+    monkeypatch.setattr(
+        "trademind.cli.get_settings",
+        lambda: Settings(_env_file=None, explanation_cache_dir=tmp_path / "e"),
+    )
+
+    result = CliRunner().invoke(
+        app, ["analyse", str(trades_file), "--format", "text", "--explain", "ollama", "--no-cache"]
+    )
+
+    assert result.exit_code == 0
+    assert "There is not enough data to check this pattern" in result.stdout
 
 
 def test_cli_analyse_text_format(trades_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:

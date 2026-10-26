@@ -17,6 +17,12 @@ class UnknownMarketError(TradeMindError):
     code = "unknown_market"
 
 
+class ExplainerError(TradeMindError):
+    """The AI service failed, or is not set up. Reports still work without explanations."""
+
+    code = "explainer_error"
+
+
 class PriceSourceError(TradeMindError):
     """The market data service failed (network down, rate limited, bad reply)."""
 

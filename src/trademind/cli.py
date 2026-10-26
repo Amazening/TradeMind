@@ -24,7 +24,14 @@ from trademind.enrichment import (
 )
 from trademind.enrichment import enrich as enrich_history
 from trademind.ingestion import import_file
-from trademind.reporting import render_text
+from trademind.reporting import (
+    ChatModel,
+    ExplanationCache,
+    GroqModel,
+    OllamaModel,
+    explain_report,
+    render_text,
+)
 
 app = typer.Typer(help="Find behaviour patterns in a share trading history.", no_args_is_help=True)
 
@@ -96,6 +103,21 @@ class OutputFormat(StrEnum):
     TEXT = "text"
 
 
+class ExplainWith(StrEnum):
+    NONE = "none"
+    GROQ = "groq"
+    OLLAMA = "ollama"
+
+
+def _chat_model(choice: ExplainWith) -> ChatModel | None:
+    settings = get_settings()
+    if choice == ExplainWith.GROQ:
+        return GroqModel(settings.groq_api_key, settings.groq_model)
+    if choice == ExplainWith.OLLAMA:
+        return OllamaModel(settings.ollama_url, settings.ollama_model)
+    return None
+
+
 def _enriched(path: Path, no_cache: bool) -> EnrichedHistory:
     source: PriceSource = YahooPriceSource()
     if not no_cache:
@@ -114,9 +136,22 @@ def analyse(
         OutputFormat, typer.Option("--format", help="json is the full report.")
     ] = OutputFormat.JSON,
     no_cache: Annotated[bool, typer.Option(help="Ignore the price cache.")] = False,
+    explain: Annotated[
+        ExplainWith,
+        typer.Option(help="Add plain English explanations. groq is hosted, ollama is local."),
+    ] = ExplainWith.NONE,
 ) -> None:
     """Read a broker CSV and find behaviour patterns in it."""
+    try:
+        model = _chat_model(explain)
+    except TradeMindError as error:
+        typer.echo(f"Error ({error.code}): {error}", err=True)
+        raise typer.Exit(code=1) from error
+
     report = analyse_history(_enriched(path, no_cache))
+    if model is not None:
+        cache = ExplanationCache(None if no_cache else get_settings().explanation_cache_dir)
+        report = explain_report(report, model, cache)
     if output_format == OutputFormat.TEXT:
         typer.echo(render_text(report))
     else:

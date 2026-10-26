@@ -150,7 +150,9 @@ class FindingSample(BaseModel):
 class Finding(BaseModel):
     """The result of one pattern check (spec section 6.3).
 
-    `explanation` is filled in later by the AI step. Analysis never sets it.
+    `explanation` is filled in later by the reporting step. Analysis never sets it.
+    `explained_by` says who wrote it: "ai" for a model's rewording of the facts, or "tool" for
+    text written by code (used when a model is not available or its reply is rejected).
     """
 
     pattern: str
@@ -163,6 +165,7 @@ class Finding(BaseModel):
     evidence: list[Evidence]
     notes: list[str]
     explanation: str | None = None
+    explained_by: Literal["ai", "tool"] | None = None
 
 
 class ReportPeriod(BaseModel):

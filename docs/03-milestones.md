@@ -97,16 +97,20 @@ This is the first point where TradeMind is useful. A good place to pause and dec
 
 ## M4: AI Explanations
 
-- `Explainer` interface.
-- Groq provider (Mazen's own free key) and Ollama provider for local use.
-- Prompt that sends only summary numbers (section 7).
-- Check that rejects advice words and numbers not in the metrics.
-- Cache explanations by finding content.
+- `ChatModel` interface, with Groq (Mazen's own free key) and Ollama providers.
+- Facts written by code for each finding, so the model only rewords them (see section 7 for why this changed).
+- Reply checks: advice, share names, greetings and lists, numbers, time spans, number words, and claims about causes, motives, other people or good and bad.
+- One retry with the reason, then fall back to the facts as written by the tool.
+- Cache of accepted explanations (memory or disk).
+- CLI: `trademind analyse <file> --explain groq|ollama`.
 
 **Done when:**
-- [ ] Tests pass using a fake explainer.
-- [ ] Mazen's report has an explanation for each finding.
-- [ ] With the AI turned off or failing, the report still works.
+- [x] Tests pass using a fake model (2026-10-26: 196 tests, Ruff and mypy clean). The providers are tested with mock transports, with no internet and no real keys.
+- [x] Mazen's report has an explanation for each finding. Tested on the real report with local Ollama (`qwen2.5:14b`): 9 seconds, and 1 second from the cache.
+- [x] With the AI turned off or failing, the report still works. A failing model falls back to the facts, marked `explained_by: "tool"`.
+- [ ] Run against Groq with a real free key (Mazen needs to sign up: console.groq.com). Not tested yet.
+
+**Found while testing on real data (2026-10-26):** a 4B model invented time spans and misread a p-value. That led to the facts design. `gemma3:12b` still invented details, all caught by the checks. `qwen2.5:14b` was reliable.
 
 ## M5: Web API
 

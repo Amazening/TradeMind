@@ -316,7 +316,8 @@ This is the main output of TradeMind.
         { "decision_id": null, "note": "A summary line that is not one decision" }
       ],
       "notes": ["Shares without market prices were left out: ..."],
-      "explanation": null
+      "explanation": null,
+      "explained_by": null
     }
   ],
   "data_notes": [
@@ -328,18 +329,28 @@ This is the main output of TradeMind.
 
 - `result`: `detected`, `not_detected`, `insufficient_data`.
 - `confidence`: `low`, `medium`, `high`, or `null` when there is not enough data.
-- `explanation`: filled in by the AI step. `null` if AI is off or failed.
+- `explanation`: filled in by the explanation step. `null` if that step was not run.
+- `explained_by`: `"ai"` for a model's rewording of the facts, `"tool"` for text written by code (used when the model fails or is rejected, and for "not enough data").
 - `schema_version` changes when the shape changes, so API users know.
 
 ## 7. AI Explanations
 
-- Input to the AI: one finding's `pattern`, `result`, `metrics`, `sample` and a count of evidence items. **No trade list, tickers, dates or amounts are sent.** This keeps personal data with us.
-- Output: 2 to 4 sentences in plain English.
-- The prompt forbids advice about any share, and forbids numbers not in the input.
-- A check after the AI step rejects text that contains buy/sell/hold advice words or numbers that are not in the metrics. If rejected, `explanation` stays `null`.
-- **AI provider (decided 2026-10-26): Groq free tier.** Requirement: free, no payment. Groq's free tier needs no card, and its terms say API inputs and outputs are not used for training. Gemini's free tier was ruled out because Google says free-tier content is used to improve its products. A small model is enough for 2 to 4 sentences.
-- Any provider works behind an `Explainer` interface. Locally, Ollama can be used instead, with no key and nothing leaving the machine.
-- Free-tier rate limits are low, so explanations are cached by finding content, and the report works without them.
+**Design change after testing (2026-10-26).** The first design gave the model the raw metrics. A 4 billion parameter model then mixed up labels ("36 trades, which was 168.48%" when 58 was months), invented time spans ("over the past two and a half years") and misread a p-value, saying a result was "unlikely to be chance" when no pattern was found. Wrong claims in a report about someone's own behaviour are worse than none. So:
+
+- **Code writes the facts.** Each finding gets 3 to 5 plain sentences written by code (`reporting/facts.py`), including the conclusion ("so this pattern was not found"). They are always correct.
+- **The model only rewords the facts.** It is told to add nothing: no new fact, number, time span, cause or comparison.
+- **The reply is checked.** It is thrown away if it gives advice, names a share, is not just plain sentences (greeting, heading or list), uses a number that is not in the facts, uses a time word or number word that is not in the facts, or uses a word about causes, motives, other people or good and bad that the facts do not use. One retry, with the reason. Accepted replies are cached.
+- **The fallback is the facts.** If the model fails or is rejected twice, the facts are shown as they are, marked `explained_by: "tool"`. Every finding always has an explanation. A data note says how many used the fallback.
+- **Not enough data** is explained by code with no model call.
+- **What the model sees:** only the facts for one finding. No trade list, share names, dates or amounts. `explained_by` is `"ai"` or `"tool"`.
+- The checks cannot catch every wrong claim, only the kinds listed. The facts and the metrics are always in the report beside the wording.
+
+**Providers.** Each is a small class behind a `ChatModel` interface (`reporting/providers.py`).
+- **Groq, free tier (decided 2026-10-26).** Needs no card. Its terms say API inputs and outputs are not used for training. Gemini's free tier was ruled out because Google says free-tier content is used to improve its products. The default model is `llama-3.1-8b-instant`, set with `GROQ_MODEL`. It has not been tested yet, because the project has no Groq key. See the open item below.
+- **Ollama, local.** No key, and nothing leaves the machine. Default `qwen2.5:14b`, set with `OLLAMA_MODEL`. In tests on the real report, `qwen2.5:14b` followed the rules. `gemma3:12b` kept inventing details, and every one was caught. `gemma3:4b` was not reliable enough.
+- Free-tier rate limits are low, so explanations are cached by a hash of the model and the facts, and a failing service is not called again in the same run.
+
+- [ ] Get a free Groq key and run the explanation step against it. Check how often the replies pass the checks.
 
 ## 8. API
 
