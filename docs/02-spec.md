@@ -51,7 +51,7 @@ Exported from Sharesies: Account → Reports → Transaction Report, CSV.
 | Column | Example | Notes |
 |---|---|---|
 | Trade ID | text | Unique per row |
-| Trade date | `2024-03-04 13:30:27.800000 (UTC)` | Always UTC, with a `(UTC)` suffix |
+| Trade date | `2024-03-04 02:15:30.123456 (UTC)` | Always UTC, with a `(UTC)` suffix |
 | Instrument code | `ABC` | Ticker, without the exchange suffix |
 | Instrument name | text | |
 | Market code | `ASX`, `NYSE`, `NZX` | Other US markets (for example NASDAQ) are likely but not yet seen |
@@ -107,7 +107,7 @@ Facts found in a real export:
 | Yahoo Finance (unofficial chart API) | No | Covers every instrument except one delisted ASX share. History back to 2016 or earlier. Returns split events. **Not licensed** for use in an app, and can change without notice |
 | Twelve Data | For prices | Lists 2,019 ASX and 233 NZX shares. All ASX and NZX data needs the paid **Pro** plan. Its stock list is missing the delisted share, 2 listed investment companies and 1 stapled security. Personal plans are non-commercial |
 | Stooq | No | Blocks scripted access with a browser check. Not usable |
-| EODHD (free key) | Yes | ASX and US work, and a share consolidation is returned correctly. **No NZX exchange at all.** Free plan stops at 1 year back, so delisted coverage could not be checked. 20 calls a day |
+| EODHD (free key) | Yes | ASX and US work, and a share consolidation in the test set is returned correctly. **No NZX exchange at all.** Free plan stops at 1 year back, so delisted coverage could not be checked. 20 calls a day |
 | Alpha Vantage (free key) | Yes | **No ASX or NZX shares** in its symbol search. `.AX` and `.NZ` tickers return nothing. Full history is a paid feature. Ruled out |
 | Marketstack (free key) | Yes | ASX, NZX and US tickers all work. Free plan stops at 1 year back. **Gaps:** about 10% fewer trading days than other sources for ASX and NZX, and it **missed a share consolidation** (no split factor, empty splits list). No data for the delisted share |
 
@@ -234,7 +234,7 @@ All shapes are Pydantic models in `core/`. Field names below are the JSON names.
     {
       "id": "row-12",
       "source_id": "Trade ID value",
-      "executed_at": "2024-03-04T13:30:27.800Z",
+      "executed_at": "2024-03-04T02:15:30.123Z",
       "market": "NYSE",
       "symbol": "ABC",
       "name": "Example Corp",
@@ -293,7 +293,7 @@ This is the main output of TradeMind.
   "schema_version": "1.0",
   "generated_at": "2026-10-24T10:00:00Z",
   "broker": "sharesies",
-  "period": { "start": "2024-03-04", "end": "2025-01-31" },
+  "period": { "start": "2022-02-01", "end": "2025-01-31" },
   "summary": {
     "trades_read": 0,
     "decisions": 0,
@@ -335,7 +335,7 @@ This is the main output of TradeMind.
 
 ## 7. AI Explanations
 
-**Design change after testing (2026-10-26).** The first design gave the model the raw metrics. A 4 billion parameter model then mixed up labels ("36 trades, which was 168.48%" when 58 was months), invented time spans ("over the past two and a half years") and misread a p-value, saying a result was "unlikely to be chance" when no pattern was found. Wrong claims in a report about someone's own behaviour are worse than none. So:
+**Design change after testing (2026-10-26).** The first design gave the model the raw metrics. A 4 billion parameter model then mixed up labels (reporting a number of months as a number of trades), invented time spans ("over the past two and a half years") and misread a p-value, saying a result was "unlikely to be chance" when no pattern was found. Wrong claims in a report about someone's own behaviour are worse than none. So:
 
 - **Code writes the facts.** Each finding gets 3 to 5 plain sentences written by code (`reporting/facts.py`), including the conclusion ("so this pattern was not found"). They are always correct.
 - **The model only rewords the facts.** It is told to add nothing: no new fact, number, time span, cause or comparison.

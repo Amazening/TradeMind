@@ -49,7 +49,7 @@ M0 to M3 give a working tool from the command line. M4 to M8 turn it into a publ
 
 **Done when:**
 - [x] All tests pass (2026-10-26: 47 tests, Ruff and mypy clean).
-- [x] Running it on Mazen's file gives row and trade counts that match a manual count, a date range and an instrument count that match a manual count of the file, with no rows skipped.
+- [x] Running it on Mazen's real file gives row and trade counts, a date range and an instrument count that match a manual count of the file, with no rows skipped.
 - [ ] Holdings after the last trade match what Sharesies shows (Mazen checks with `uv run trademind import data/private/sharesies-transactions.csv --holdings`).
 
 ## M2: Market Prices
@@ -68,7 +68,7 @@ M0 to M3 give a working tool from the command line. M4 to M8 turn it into a publ
 **Done when:**
 - [x] All tests pass, with no internet calls in tests (2026-10-26: 99 tests, Ruff and mypy clean).
 - [x] Mazen's file enriches without errors. The delisted ASX share shows as delisted with a data note.
-- [x] The consolidations are adjusted. Two consolidations were found and the trade prices now agree with the market (ratio 1.00 to 1.01).
+- [x] The consolidations are adjusted. Two were found in the real file, and after adjusting, the trade prices agree with the market (ratio 1.00 to 1.01).
 - [x] A second run uses the cache and makes no network calls (1 second, against 18 seconds the first time).
 
 **Found while testing on real data (2026-10-26):** Yahoo's prices for one share that had a consolidation are about 1.7 times too low before the consolidation, on both its listings. It looks like Yahoo applied a second adjustment (probably for a capital raising) that it does not list as a split. The price check caught it, and that share now uses own trade prices only. This is a reason to compare any new provider against real trades before trusting it.
@@ -91,7 +91,8 @@ M0 to M3 give a working tool from the command line. M4 to M8 turn it into a publ
 - [x] Any threshold change is written into section 5 with the reason. The one addition is the NZ$500 minimum for overtrading months.
 
 **Checks made on Mazen's real data (2026-10-26):**
-- Portfolio values computed from the trades and Yahoo prices (including exchange rates) were within a few percent of Mazen's own records.
+- Portfolio values computed from the trades, Yahoo prices and exchange rates were checked against Mazen's own records and agreed within a few percent.
+- The first results were given to Mazen to review. They are not recorded here, because this repo is public and they are personal. One caution from them: turnover cannot tell a reallocation or a forced sale from a habit, so the report states what happened and does not claim a motive.
 
 This is the first point where TradeMind is useful. A good place to pause and decide whether the patterns are worth showing to others.
 

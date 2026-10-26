@@ -17,7 +17,7 @@ describe("ReportScreen", () => {
     setup();
 
     expect(screen.getByRole("heading", { level: 1, name: "Your report" })).toHaveFocus();
-    expect(screen.getByText(/4 March 2024 to 31 January 2025/)).toBeInTheDocument();
+    expect(screen.getByText(/1 February 2022 to 31 January 2025/)).toBeInTheDocument();
     expect(screen.getByText(/412 trades, 190 decisions by you and 20 by the platform/)).toBeInTheDocument();
     expect(screen.getByText(/14 shares on ASX, NYSE, NZX/)).toBeInTheDocument();
   });

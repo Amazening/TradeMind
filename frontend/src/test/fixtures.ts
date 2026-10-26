@@ -51,14 +51,14 @@ export const report: Report = {
   schema_version: "1.0",
   generated_at: "2026-10-26T09:00:00Z",
   broker: "sharesies",
-  period: { start: "2024-03-04", end: "2025-01-31" },
+  period: { start: "2022-02-01", end: "2025-01-31" },
   summary: {
     trades_read: 412,
     decisions: 210,
     user_decisions: 190,
     platform_decisions: 20,
     markets: ["ASX", "NYSE", "NZX"],
-    instruments: 22,
+    instruments: 14,
   },
   findings: [overtrading, disposition, runUp],
   data_notes: [
