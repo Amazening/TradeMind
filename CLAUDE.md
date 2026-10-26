@@ -84,6 +84,12 @@ uv run mypy src tests
 uv run trademind --help
 ```
 
+```bash
+uv run trademind serve
+```
+
+The web API docs are then at http://127.0.0.1:8000/api/docs. Other commands: `trademind import <file>`, `trademind enrich <file>` and `trademind analyse <file> [--format text] [--explain groq|ollama]`.
+
 Before saying any change is finished, run all four checks (pytest, ruff check, ruff format --check, mypy). CI runs the same checks (`.github/workflows/ci.yml`).
 
 ## Data

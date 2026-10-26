@@ -119,10 +119,13 @@ This is the first point where TradeMind is useful. A good place to pause and dec
 - Upload size and type checks. One error shape.
 - Logs with counts and timings only (section 10, Privacy).
 
+- CLI: `trademind serve` runs the API. Settings pick the price source (Yahoo behind the disk cache) and Groq if a key is set.
+
 **Done when:**
-- [ ] API tests pass for each endpoint and each error case (section 1.2).
-- [ ] A test shows the data is gone after `DELETE` and after the 1-hour expiry.
-- [ ] The generated API docs page lists every endpoint.
+- [x] API tests pass for each endpoint and each error case (section 1.2) (2026-10-26: 227 tests, Ruff and mypy clean).
+- [x] A test shows the data is gone after `DELETE` and after the 1-hour expiry.
+- [x] The generated API docs page lists every endpoint. A test checks `/api/openapi.json` and `/api/docs`.
+- [x] Tested for real: the server was started, Mazen's real export was uploaded with curl, the status moved through the steps, the report came back, and `DELETE` removed it.
 
 ## M6: Web Frontend
 

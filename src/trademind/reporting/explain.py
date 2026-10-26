@@ -253,6 +253,22 @@ def cache_key(model: ChatModel, user_prompt: str) -> str:
     return hashlib.sha256(material.encode("utf-8")).hexdigest()
 
 
+def explain_with_facts(report: Report) -> Report:
+    """A copy of the report with the tool's own explanation on every finding. No model is used."""
+    findings = [
+        finding.model_copy(
+            update={
+                "explanation": not_enough_data_text(finding)
+                if finding.result == "insufficient_data"
+                else tool_text(finding),
+                "explained_by": "tool",
+            }
+        )
+        for finding in report.findings
+    ]
+    return report.model_copy(update={"findings": findings})
+
+
 def explain_report(
     report: Report, model: ChatModel, cache: ExplanationCache | None = None
 ) -> Report:

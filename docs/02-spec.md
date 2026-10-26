@@ -356,15 +356,32 @@ This is the main output of TradeMind.
 
 | Method | Path | What it does |
 |---|---|---|
-| `POST` | `/api/analyses` | Upload a CSV (multipart). Returns `202` with `{ "id": "..." }` |
-| `GET` | `/api/analyses/{id}` | Returns status (`queued`, `running`, `done`, `failed`), the current step, and the `Report` when done |
-| `DELETE` | `/api/analyses/{id}` | Deletes the upload and report now |
-| `GET` | `/api/health` | Health check |
+| `POST` | `/api/analyses` | Upload a CSV (multipart field `file`). Returns `202` with `{ "id", "status" }` and a `Location` header |
+| `GET` | `/api/analyses/{id}` | Returns `{ id, status, step, report, error }`. `status` is `queued`, `running`, `done` or `failed`. `step` is `getting_prices`, `finding_patterns` or `writing_explanations` while running |
+| `DELETE` | `/api/analyses/{id}` | Deletes the upload and report now. `204`, or `404` if it is not there |
+| `GET` | `/api/health` | `{ "status": "ok", "version": "..." }` |
 
-- The work runs in the background because getting prices can take a while.
-- Uploads and reports are held in memory only. They are deleted when the user deletes them or 1 hour after the report is done, whichever comes first.
-- Upload limit: 5 MB.
-- Errors use one shape: `{ "error": { "code": "unrecognised_broker", "message": "..." } }`.
+Interactive docs are at `/api/docs`, and the OpenAPI file at `/api/openapi.json`.
+
+**How an upload is handled**
+- The file is checked and read **during the upload request**, so a bad file gets an answer straight away. Only getting prices, finding patterns and writing explanations run in the background, because they can take a while.
+- The ids are 128 random bits. With no accounts, the id is the only thing protecting a report, so it must not be guessable.
+- With no AI key set, every finding still gets the tool's own explanation (`explained_by: "tool"`).
+
+**Privacy**
+- Uploads and reports are held in memory only. They are deleted when the user deletes them, or 1 hour after the report is done, whichever comes first. A job that never finishes also expires after 1 hour.
+- The parsed upload is dropped from the store when the job starts, and only the finished report is kept.
+- Logs hold counts and timings only. An unexpected crash logs the exception type and nothing else, because its message could hold values from the file. Error replies never repeat anything from the file.
+- Responses under `/api/analyses` say `Cache-Control: no-store`.
+- The upload framework keeps files over 1 MB in a temporary file while it reads them, and deletes it at once. Typical exports are far smaller and stay in memory.
+
+**Limits and errors**
+- Upload limit: 5 MB. A request that says it is much bigger is refused before it is read (`413`). A request that does not say its size is refused (`411`).
+- At most 50 analyses are held at once. Beyond that, `503 busy`.
+- Errors use one shape: `{ "error": { "code": "unrecognised_broker", "message": "..." } }`. The codes are `not_a_csv` (400), `unrecognised_broker`, `no_trades_found` (422), `invalid_request` (422), `file_too_large` (413), `length_required` (411), `busy` (503), `not_found` (404), `method_not_allowed` (405), and, on a job, `price_source_error` and `internal_error`.
+- A market data outage is reported as "We couldn't get market prices. Try again later." The service's own message is never shown.
+
+**Not done yet (for the deploy milestone):** rate limiting per address, security headers, and a request timeout. These belong on the reverse proxy.
 
 ## 9. Frontend
 

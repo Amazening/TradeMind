@@ -98,6 +98,17 @@ def import_(
             )
 
 
+@app.command()
+def serve(
+    host: Annotated[str, typer.Option(help="Use 0.0.0.0 to accept other machines.")] = "127.0.0.1",
+    port: Annotated[int, typer.Option(help="Port to listen on.")] = 8000,
+) -> None:
+    """Run the web API. Docs are at /api/docs."""
+    import uvicorn
+
+    uvicorn.run("trademind.api.main:build_app", factory=True, host=host, port=port)
+
+
 class OutputFormat(StrEnum):
     JSON = "json"
     TEXT = "text"
