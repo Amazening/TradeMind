@@ -1,0 +1,20 @@
+# Caddy gets and renews a free HTTPS certificate for SITE_ADDRESS by itself.
+#
+# There is no `log` block on purpose. Access logs would hold every web address, and the address of
+# a report contains its id, which is all that protects it.
+
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	# A little above the app's own 5 MB limit, for the upload's framing.
+	request_body {
+		max_size 6MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+
+	reverse_proxy app:8000
+}

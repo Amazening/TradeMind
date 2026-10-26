@@ -41,4 +41,9 @@ def build_app() -> FastAPI:
             "No built frontend at %s. Only the API is served. Run `npm run build` in frontend/.",
             settings.frontend_dir,
         )
-    return create_app(price_source=source, chat_model=model, static_dir=settings.frontend_dir)
+    return create_app(
+        price_source=source,
+        chat_model=model,
+        static_dir=settings.frontend_dir,
+        uploads_per_hour=settings.uploads_per_hour or None,
+    )

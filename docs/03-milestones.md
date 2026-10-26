@@ -149,18 +149,25 @@ This is the first point where TradeMind is useful. A good place to pause and dec
 
 ## M7: Deploy
 
-- Dockerfile for the single container.
-- A Catalyst Cloud VM on Mazen's personal account. Most likely separate from the homelab (section 11).
+- Dockerfile for the single container, a compose file with a proxy (Caddy, automatic HTTPS), and step-by-step instructions in `deploy/README.md`.
+- A Catalyst Cloud VM on Mazen's personal account. Separate from the homelab (section 11).
 - TLS and a subdomain under `mazenkhallaf.com`.
 - Secrets set on the server, not in the image.
-- Basic hardening: firewall, updates, no open admin dashboards.
+- Hardening: firewall, updates, no open admin dashboards. In the app: rate limiting per visitor, security headers, no web addresses in logs.
 - An uptime check.
 - Decide the market data question for public use (see "Open Issue" below).
 
 **Done when:**
+- [x] The image builds and runs (2026-10-26). 228 MB. It runs as a non-root user with a read-only filesystem, no extra privileges and a 512 MB limit, and used about 54 MB. Docker's health check passes. CI builds it and checks that it answers on every push.
+- [x] The whole stack was run locally with a proxy (using `localhost`): HTTPS works, HTTP redirects to HTTPS, HSTS and the security headers are set, the app's port cannot be reached except through the proxy, a 7 MB upload is refused by the proxy and a 5.5 MB one by the app, and the 4th upload in an hour with a limit of 3 gets `429`.
+- [x] No secret is in the image or the repo. `.dockerignore` keeps `.env`, `data/` and `.git` out of the image.
+- [x] Logs hold counts and timings only. A test run showed no report ids and no trade data in the app logs, and the proxy has no access log.
+- [x] A new deploy is one documented command (`docker compose up -d --build`).
+- [ ] **Mazen:** create the Catalyst VM and security group, and point a DNS name at it (`deploy/README.md`, steps 1 to 2).
+- [ ] **Mazen:** run the steps on the VM, then the "Before you invite anyone" checklist (HTTPS grade, headers, port scan).
+- [ ] **Mazen:** add the uptime check.
+- [ ] **Mazen:** settle the market data question (below).
 - [ ] The site works at its public URL over HTTPS.
-- [ ] A new deploy is one documented command.
-- [ ] No secret is in the image or the repo.
 
 ## M8: Test Users
 

@@ -381,7 +381,13 @@ Interactive docs are at `/api/docs`, and the OpenAPI file at `/api/openapi.json`
 - Errors use one shape: `{ "error": { "code": "unrecognised_broker", "message": "..." } }`. The codes are `not_a_csv` (400), `unrecognised_broker`, `no_trades_found` (422), `invalid_request` (422), `file_too_large` (413), `length_required` (411), `busy` (503), `not_found` (404), `method_not_allowed` (405), and, on a job, `price_source_error` and `internal_error`.
 - A market data outage is reported as "We couldn't get market prices. Try again later." The service's own message is never shown.
 
-**Not done yet (for the deploy milestone):** rate limiting per address, security headers, and a request timeout. These belong on the reverse proxy.
+**Rate limit:** each visitor can upload 10 files an hour (`UPLOADS_PER_HOUR`, 0 turns it off). Past that, `429 rate_limited` with a `Retry-After` header. Only uploads count. The counts are in memory and a visitor's address is forgotten when its hour passes. Behind a proxy the server must run with `--behind-proxy`, so the address is the visitor's and not the proxy's.
+
+**Logs:** the server does not log web addresses, because the address of a report holds its id. The proxy has no access log for the same reason.
+
+**Hardening in the deployed setup** (see `deploy/`): HTTPS with automatic certificates, HTTP redirected to HTTPS, HSTS, no `Server` header, a 6 MB body limit at the proxy as well as the app's 5 MB, a container with no root, a read-only filesystem, no extra privileges and a memory ceiling, and an app port that only the proxy can reach.
+
+Also add `429 rate_limited` to the error codes above.
 
 ## 9. Frontend
 

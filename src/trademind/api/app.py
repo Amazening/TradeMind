@@ -35,6 +35,7 @@ from trademind.api.jobs import (
     JobStore,
     StoreFullError,
 )
+from trademind.api.ratelimit import RateLimiter
 from trademind.core.errors import PriceSourceError, TradeMindError
 from trademind.enrichment import PriceSource, enrich
 from trademind.ingestion import import_csv
@@ -55,6 +56,7 @@ def create_app(
     max_jobs: int = 50,
     now: Callable[[], datetime] = lambda: datetime.now(UTC),
     static_dir: Path | None = None,
+    uploads_per_hour: int | None = None,
 ) -> FastAPI:
     app = FastAPI(
         title="TradeMind",
@@ -65,6 +67,7 @@ def create_app(
         redoc_url=None,
     )
     store = JobStore(ttl=ttl, max_jobs=max_jobs, now=now)
+    limiter = RateLimiter(uploads_per_hour, timedelta(hours=1), now) if uploads_per_hour else None
     explanations = ExplanationCache()  # memory only
     app.state.jobs = store
 
@@ -106,7 +109,7 @@ def create_app(
     async def limit_body_and_add_headers(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        response = await _guarded(request, call_next, max_upload_bytes)
+        response = await _guarded(request, call_next, max_upload_bytes, limiter)
         return _with_headers(response, request.url.path)
 
     @app.exception_handler(RequestValidationError)
@@ -176,10 +179,22 @@ def create_app(
 
 
 async def _guarded(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]], max_upload_bytes: int
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+    max_upload_bytes: int,
+    limiter: RateLimiter | None,
 ) -> Response:
-    """Refuses an upload that is too big, or that does not say its size, before it is read."""
+    """Refuses an upload from a visitor who has sent too many, that is too big, or that does not
+    say its size. This happens before the file is read."""
     if request.method == "POST":
+        if limiter is not None:
+            address = request.client.host if request.client else "unknown"
+            if not limiter.allow(address):
+                response = _error(
+                    429, "rate_limited", "Too many uploads. Please try again in a little while."
+                )
+                response.headers["Retry-After"] = str(limiter.retry_after_seconds(address))
+                return response
         declared = request.headers.get("content-length")
         if declared is None or not declared.isdigit():
             return _error(411, "length_required", "The upload must say how big it is.")

@@ -102,11 +102,28 @@ def import_(
 def serve(
     host: Annotated[str, typer.Option(help="Use 0.0.0.0 to accept other machines.")] = "127.0.0.1",
     port: Annotated[int, typer.Option(help="Port to listen on.")] = 8000,
+    behind_proxy: Annotated[
+        bool,
+        typer.Option(
+            help="Trust the visitor's address from the proxy. Only turn this on when the "
+            "server can be reached through the proxy alone."
+        ),
+    ] = False,
 ) -> None:
     """Run the web API. Docs are at /api/docs."""
     import uvicorn
 
-    uvicorn.run("trademind.api.main:build_app", factory=True, host=host, port=port)
+    uvicorn.run(
+        "trademind.api.main:build_app",
+        factory=True,
+        host=host,
+        port=port,
+        # Web addresses contain the analysis id, which is all that protects a report. Not logging
+        # them keeps it out of log files.
+        access_log=False,
+        proxy_headers=behind_proxy,
+        forwarded_allow_ips="*" if behind_proxy else None,
+    )
 
 
 class OutputFormat(StrEnum):

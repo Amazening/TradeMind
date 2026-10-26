@@ -121,6 +121,58 @@ def test_the_api_docs_list_every_endpoint(client: TestClient) -> None:
     assert client.get("/api/docs").status_code == 200
 
 
+# --- rate limiting ------------------------------------------------------------------------
+
+
+def test_a_visitor_who_uploads_too_often_is_slowed_down() -> None:
+    client = _client(uploads_per_hour=2)
+
+    assert _upload(client).status_code == 202
+    assert _upload(client).status_code == 202
+    response = _upload(client)
+
+    assert response.status_code == 429
+    assert _error(response)["code"] == "rate_limited"
+    assert int(response.headers["retry-after"]) > 0
+
+
+def test_the_limit_only_counts_uploads() -> None:
+    client = _client(uploads_per_hour=1)
+    job_id = _upload(client).json()["id"]
+
+    for _ in range(5):
+        assert client.get(f"/api/analyses/{job_id}").status_code == 200
+        assert client.get("/api/health").status_code == 200
+
+
+def test_the_allowance_comes_back_after_an_hour() -> None:
+    clock = Clock()
+    client = _client(uploads_per_hour=1, now=clock)
+    _upload(client)
+    assert _upload(client).status_code == 429
+
+    clock.now += timedelta(hours=1, minutes=1)
+
+    assert _upload(client).status_code == 202
+
+
+def test_there_is_no_limit_unless_one_is_set() -> None:
+    client = _client(max_jobs=100)
+
+    assert all(_upload(client).status_code == 202 for _ in range(15))
+
+
+def test_refused_uploads_still_count_and_still_carry_security_headers() -> None:
+    client = _client(uploads_per_hour=1)
+    _upload(client)
+
+    response = _upload(client)
+
+    assert response.status_code == 429
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["cache-control"] == "no-store"
+
+
 # --- the frontend and security headers ----------------------------------------------------
 
 

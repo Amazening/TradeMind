@@ -60,3 +60,25 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the image
+        run: docker build -t trademind:ci .
+
+      - name: Start it and check it answers
+        run: |
+          docker run -d --name trademind-ci -p 8000:8000 trademind:ci
+          for attempt in $(seq 1 30); do
+            curl -fs http://127.0.0.1:8000/api/health && break
+            sleep 1
+          done
+          curl -fs http://127.0.0.1:8000/api/health
+          curl -fs http://127.0.0.1:8000/ | grep -q "<title>TradeMind</title>"
+
+      - name: Show the logs if it failed
+        if: failure()
+        run: docker logs trademind-ci

@@ -1,0 +1,21 @@
+# Never send these into an image.
+.git
+.env
+.venv
+data/
+.cache/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.pyc
+
+# Built or installed inside the image instead.
+frontend/node_modules/
+frontend/dist/
+
+# Not needed to run.
+tests/
+docs/
+.github/
+deploy/

@@ -1,0 +1,64 @@
+# TradeMind on one small server: the app, and a proxy that gets and renews the HTTPS certificate.
+# Run from this folder:  docker compose up -d --build
+name: trademind
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    # Only the proxy can reach the app. The port is not published to the internet.
+    expose:
+      - "8000"
+    volumes:
+      - prices:/data # market prices only (public data, no trades)
+    # Locked down: nothing can be written except the price cache and /tmp, no extra
+    # privileges, and a ceiling on memory and processes.
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    pids_limit: 200
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: "3"
+
+  proxy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?Set SITE_ADDRESS in deploy/.env, for example trademind.example.com}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data # the certificate
+      - caddy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE # to listen on ports 80 and 443
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: "3"
+
+volumes:
+  prices:
+  caddy_data:
+  caddy_config:
