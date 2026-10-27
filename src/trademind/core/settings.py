@@ -14,7 +14,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     groq_api_key: SecretStr | None = None
-    groq_model: str = "llama-3.1-8b-instant"
+    # Groq retires models, so check the list at console.groq.com/docs/models if this stops working.
+    # Avoid the gpt-oss models here: they spend the reply's token budget on hidden "thinking".
+    groq_model: str = "qwen/qwen3.8-27b"
     ollama_url: str = "http://localhost:11434"
     ollama_model: str = "qwen2.5:14b"
     frontend_dir: Path = Path("frontend/dist")

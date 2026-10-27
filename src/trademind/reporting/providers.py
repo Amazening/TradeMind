@@ -45,6 +45,11 @@ class GroqModel:
             raise ExplainerError("Groq rate limit reached. Try again later.")
         if response.status_code in (401, 403):
             raise ExplainerError("Groq rejected the API key.")
+        if response.status_code == 404:
+            raise ExplainerError(
+                f"Groq does not have the model '{self._model}'. Models get retired. "
+                "Pick one from console.groq.com/docs/models and set GROQ_MODEL."
+            )
         if response.status_code != 200:
             raise ExplainerError(f"Groq replied HTTP {response.status_code}")
         try:

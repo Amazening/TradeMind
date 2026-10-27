@@ -346,11 +346,11 @@ This is the main output of TradeMind.
 - The checks cannot catch every wrong claim, only the kinds listed. The facts and the metrics are always in the report beside the wording.
 
 **Providers.** Each is a small class behind a `ChatModel` interface (`reporting/providers.py`).
-- **Groq, free tier (decided 2026-10-26).** Needs no card. Its terms say API inputs and outputs are not used for training. Gemini's free tier was ruled out because Google says free-tier content is used to improve its products. The default model is `llama-3.1-8b-instant`, set with `GROQ_MODEL`. It has not been tested yet, because the project has no Groq key. See the open item below.
+- **Groq, free tier (decided 2026-10-26).** Needs no card. Its terms say API inputs and outputs are not used for training. Gemini's free tier was ruled out because Google says free-tier content is used to improve its products. The default model is `qwen/qwen3.8-27b`, set with `GROQ_MODEL`. It was tested on 2026-10-27 and follows the rules well. Groq retires models now and then, and the first model chosen here (`llama-3.1-8b-instant`) had already gone. The `gpt-oss` models do not work for this: they spend the reply's token budget on hidden "thinking" and return empty text.
 - **Ollama, local.** No key, and nothing leaves the machine. Default `qwen2.5:14b`, set with `OLLAMA_MODEL`. In tests on the real report, `qwen2.5:14b` followed the rules. `gemma3:12b` kept inventing details, and every one was caught. `gemma3:4b` was not reliable enough.
 - Free-tier rate limits are low, so explanations are cached by a hash of the model and the facts, and a failing service is not called again in the same run.
 
-- [ ] Get a free Groq key and run the explanation step against it. Check how often the replies pass the checks.
+- [x] Get a free Groq key and run the explanation step against it (2026-10-27). 7 of 9 replies passed first time, and the other 2 were rejected for a check that was too strict. That check is fixed.
 
 ## 8. API
 

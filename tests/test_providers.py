@@ -50,7 +50,13 @@ def test_groq_model_name_includes_the_provider() -> None:
 
 @pytest.mark.parametrize(
     ("status", "message"),
-    [(429, "rate limit"), (401, "rejected"), (403, "rejected"), (500, "HTTP 500")],
+    [
+        (429, "rate limit"),
+        (401, "rejected"),
+        (403, "rejected"),
+        (404, "does not have the model 'test-model'.*GROQ_MODEL"),
+        (500, "HTTP 500"),
+    ],
 )
 def test_groq_errors_become_explainer_errors(status: int, message: str) -> None:
     model = _groq(httpx.MockTransport(lambda request: httpx.Response(status)))

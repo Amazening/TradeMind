@@ -215,6 +215,16 @@ def test_time_spans_and_number_words_that_were_not_given_are_rejected() -> None:
     assert "number word" in (check_explanation("Twice as many were sold.", finding) or "")
 
 
+def test_a_number_word_is_allowed_when_its_number_is_a_fact() -> None:
+    # Models often write "thirteen" for 13. That is the same fact, so it is fine.
+    finding = _overtrading().model_copy(update={"sample": FindingSample(decisions=13, cases=36)})
+
+    assert check_explanation("Thirteen of your decisions were checked.", finding) is None
+    problem = check_explanation("Fifteen of your decisions were checked.", finding)
+    assert problem is not None
+    assert "number word" in problem
+
+
 def test_a_time_span_in_the_facts_is_allowed() -> None:
     # The overtrading facts talk about months and a year.
     text = "Over 36 months you traded about 14% of your portfolio each month."

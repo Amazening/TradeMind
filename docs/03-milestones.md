@@ -109,7 +109,7 @@ This is the first point where TradeMind is useful. A good place to pause and dec
 - [x] Tests pass using a fake model (2026-10-26: 196 tests, Ruff and mypy clean). The providers are tested with mock transports, with no internet and no real keys.
 - [x] Mazen's report has an explanation for each finding. Tested on the real report with local Ollama (`qwen2.5:14b`): 9 seconds, and 1 second from the cache.
 - [x] With the AI turned off or failing, the report still works. A failing model falls back to the facts, marked `explained_by: "tool"`.
-- [ ] Run against Groq with a real free key (Mazen needs to sign up: console.groq.com). Not tested yet.
+- [x] Run against Groq with a real free key (2026-10-27). The first guess at a model (`llama-3.1-8b-instant`) had been retired (HTTP 404), so the default is now `qwen/qwen3.8-27b`. On the real report, 7 of 9 replies passed the checks first time, and the 2 that failed wrote "thirteen" for 13. The check now accepts a number word whose value is one of the facts. After that, all 3 findings were written by the AI with no fallback. The `gpt-oss` models return empty text because they use the reply's token budget on hidden "thinking". Groq retires models, so a 404 now says to pick a new one with `GROQ_MODEL`.
 
 **Found while testing on real data (2026-10-26):** a 4B model invented time spans and misread a p-value. That led to the facts design. `gemma3:12b` still invented details, all caught by the checks. `qwen2.5:14b` was reliable.
 

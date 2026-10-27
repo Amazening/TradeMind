@@ -20,7 +20,7 @@ from trademind.core.models import DataNote, Finding, Report
 from trademind.reporting.facts import facts_for
 from trademind.reporting.models import ChatModel
 
-PROMPT_VERSION = "3"
+PROMPT_VERSION = "4"
 MAX_ATTEMPTS = 2
 MAX_LENGTH = 700
 
@@ -98,42 +98,14 @@ _TIME_STEMS = {
     "yesterday": "yesterday",
     "today": "today",
 }
-_NUMBER_WORDS = frozenset(
-    [
-        "one",
-        "two",
-        "three",
-        "four",
-        "five",
-        "six",
-        "seven",
-        "eight",
-        "nine",
-        "ten",
-        "eleven",
-        "twelve",
-        "thirteen",
-        "fourteen",
-        "fifteen",
-        "sixteen",
-        "seventeen",
-        "eighteen",
-        "nineteen",
-        "twenty",
-        "thirty",
-        "forty",
-        "fifty",
-        "hundred",
-        "thousand",
-        "half",
-        "twice",
-        "double",
-        "triple",
-        "dozen",
-        "quarter",
-        "third",
-    ]
-)
+# Number words. One may be used if its value is one of the facts' numbers ("thirteen" when the
+# fact says 13). Vague amounts such as "half" or "twice" are only allowed if the facts use them.
+_NUMBER_WORD_VALUES = dict(
+    one=1, two=2, three=3, four=4, five=5, six=6, seven=7, eight=8, nine=9, ten=10, eleven=11,
+    twelve=12, thirteen=13, fourteen=14, fifteen=15, sixteen=16, seventeen=17, eighteen=18,
+    nineteen=19, twenty=20, thirty=30, forty=40, fifty=50, hundred=100, thousand=1000,
+)  # fmt: skip
+_VAGUE_AMOUNT_WORDS = frozenset(["half", "twice", "double", "triple", "dozen", "quarter", "third"])
 # Claims about causes, motives, other people, or whether something is good or bad. The facts make
 # none of these, so a reply that does has invented something. Each word is allowed only if the
 # facts use the word themselves.
@@ -188,8 +160,12 @@ def check_explanation(text: str, finding: Finding) -> str | None:
     for word in _WORD.findall(text.lower()):
         if word in _TIME_STEMS and _TIME_STEMS[word] not in facts_stems:
             return f"it mentioned a time span that was not given ({word})"
-        if word in _NUMBER_WORDS and word not in facts_words:
+        if word in _VAGUE_AMOUNT_WORDS and word not in facts_words:
             return f"it used a number word that was not given ({word})"
+        if word in _NUMBER_WORD_VALUES and word not in facts_words:
+            value = _NUMBER_WORD_VALUES[word]
+            if not any(abs(value - a) <= 0.051 for a in allowed):
+                return f"it used a number word that was not given ({word})"
         if word in _UNSUPPORTED_CLAIM_WORDS and word not in facts_words:
             return f"it made a claim that was not in the facts ({word})"
     return None
