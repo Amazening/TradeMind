@@ -25,14 +25,14 @@ People repeat these habits when they can't see them. The link between the dispos
 
 | User | Why they matter |
 |---|---|
-| Mazen | First real user. Holds shares through IBKR and Sharesies |
-| Casual NZ and Australian investors | The wider audience. Use apps like Sharesies, IBKR, Stake |
+| Mazen | First real user. His Sharesies history is the test data |
+| Casual NZ and Australian investors | The wider audience. Use apps like Sharesies and Stake |
 
 Mazen invests long term, so his own history may show few patterns. A short or clean result is still a valid result, and the report should handle it well.
 
 ## What v1 Does
 
-- Reads trade history CSVs from **IBKR** and **Sharesies**.
+- Reads trade history CSVs from **Sharesies**. IBKR was dropped on 2026-10-27: Mazen's IBKR history is too small to be useful, and a reader is not needed without data to test it on.
 - Adds market prices around each trade.
 - Detects three patterns with rules we write and test:
   - **Overtrading:** trading often compared with the size of the portfolio.
@@ -48,11 +48,11 @@ Mazen invests long term, so his own history may show few patterns. A short or cl
 - No connecting to broker accounts. Upload only.
 - No user accounts. No storing trade histories after the report is made.
 - No PDF or email. These can come later as extra outputs from the JSON.
-- No brokers beyond IBKR and Sharesies.
+- No brokers beyond Sharesies. Each new broker needs a real sample export to build and test a reader.
 
 ## Definition of Done for v1
 
-- [ ] Mazen runs his own IBKR and Sharesies history through it and gets a correct report.
+- [ ] Mazen runs his own Sharesies history through it and gets a correct report.
 - [ ] 5 people upload their own CSV and say the report was useful.
 - [ ] It is deployed and reachable from a public URL.
 - [ ] Each pattern rule has tests based on small, hand-made trade scenarios.
@@ -92,7 +92,7 @@ Rules decide what is true. AI turns that into readable text. If the AI is down, 
 ## Open Questions
 
 - [x] Export a Sharesies transaction report and record its columns. Columns: Trade ID, Trade date (UTC), Instrument code, Instrument name, Market code, Quantity (can be fractional), Price, Transaction type, Currency, Amount, Transaction fee, Transaction method (includes TRANSFER OUT), Portfolio, Initiated by (the user, System or Operator). Covers ASX, NYSE and NZX.
-- [ ] Export an IBKR trade history (Activity Statement or Flex Query) and record its columns.
+- [x] IBKR export: dropped (2026-10-27). Not useful for v1.
 - [x] Check Mazen's own history has enough trades. Sharesies alone has several hundred, most of them on the ASX.
 - [ ] Choose a market data source that covers US, ASX and NZX shares, and check its free limits.
 - [x] Choose the AI provider for explanations: Groq free tier (see `02-spec.md` section 7). v1 must not cost money.

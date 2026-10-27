@@ -1,6 +1,6 @@
 # TradeMind: Spec
 
-Status: agreed 2026-10-26. Covers Sharesies only. IBKR is added once a sample export is available.
+Status: agreed 2026-10-26. Covers Sharesies only. IBKR was dropped on 2026-10-27, because there is no useful data to build a reader against.
 
 Read `01-vision.md` first. This doc says **what** v1 does and the data shapes between layers. `03-milestones.md` will say in what order it gets built.
 
@@ -463,7 +463,7 @@ TradeMind/
 
 ## 13. Later (Not v1)
 
-- IBKR reader (waiting on a sample export).
+- More brokers. Each needs a real sample export to build and test a reader.
 - More patterns: panic selling after market drops, concentration in one share, trading around news.
 - PDF and email output from the same `Report`.
 - Comparison with a simple buy-and-hold of the same money.

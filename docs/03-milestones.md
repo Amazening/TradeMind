@@ -192,4 +192,4 @@ These two don't fit together. Options, to decide at M7:
 
 ## Later (After v1)
 
-From `02-spec.md` section 13: IBKR reader, more patterns, PDF and email output, a buy-and-hold comparison, a halal lens.
+From `02-spec.md` section 13: more brokers (each needs a real sample export), more patterns, PDF and email output, a buy-and-hold comparison, a halal lens.
