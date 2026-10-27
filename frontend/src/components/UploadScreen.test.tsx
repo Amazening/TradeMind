@@ -130,6 +130,56 @@ describe("UploadScreen", () => {
     expect(screen.getByRole("button", { name: /uploading/i })).toBeDisabled();
   });
 
+  it("leaves out the access code field and the example link unless asked", () => {
+    setup();
+
+    expect(screen.queryByLabelText(/access code/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /example/i })).not.toBeInTheDocument();
+  });
+
+  it("needs a code before the button works, and hands it over with the file", async () => {
+    sessionStorage.clear();
+    const { input, onSubmit } = setup({ accessCodeRequired: true });
+    await userEvent.upload(input, csvFile());
+    const button = screen.getByRole("button", { name: /analyse my trades/i });
+    expect(button).toBeDisabled();
+
+    await userEvent.type(screen.getByLabelText(/access code/i), "  open-sesame ");
+
+    expect(button).toBeEnabled();
+    await userEvent.click(button);
+    expect(onSubmit.mock.calls[0]?.[1]).toBe("open-sesame");
+  });
+
+  it("hides what is typed in the access code field", () => {
+    sessionStorage.clear();
+    setup({ accessCodeRequired: true });
+
+    expect(screen.getByLabelText(/access code/i)).toHaveAttribute("type", "password");
+  });
+
+  it("remembers the code for this tab only", async () => {
+    sessionStorage.clear();
+    const first = setup({ accessCodeRequired: true });
+    await userEvent.upload(first.input, csvFile());
+    await userEvent.type(screen.getByLabelText(/access code/i), "open-sesame");
+    await userEvent.click(screen.getByRole("button", { name: /analyse my trades/i }));
+    first.unmount();
+
+    setup({ accessCodeRequired: true });
+
+    expect(screen.getByLabelText(/access code/i)).toHaveValue("open-sesame");
+  });
+
+  it("offers the example report when it can show one", async () => {
+    const onShowExample = vi.fn();
+    setup({ onShowExample });
+
+    await userEvent.click(screen.getByRole("button", { name: /see an example with made-up trades/i }));
+
+    expect(onShowExample).toHaveBeenCalledTimes(1);
+  });
+
   it("has no accessibility problems that can be found without a browser", async () => {
     const { container } = setup({ error: "A problem", notice: "A notice" });
 

@@ -2,8 +2,31 @@ import { useState, type ChangeEvent, type DragEvent, type FormEvent } from "reac
 import { MAX_UPLOAD_BYTES, formatBytes } from "../format";
 import { useFocusOnMount } from "../useFocusOnMount";
 
+const CODE_KEY = "trademind-access-code";
+
+/** The code is kept for this browser tab only, so an invited person does not retype it. */
+function readStoredCode(): string {
+  try {
+    return sessionStorage.getItem(CODE_KEY) ?? "";
+  } catch {
+    return ""; // storage can be blocked. The page works without it.
+  }
+}
+
+function storeCode(code: string): void {
+  try {
+    sessionStorage.setItem(CODE_KEY, code);
+  } catch {
+    // Not remembering the code is fine.
+  }
+}
+
 interface Props {
-  onSubmit: (file: File) => void;
+  onSubmit: (file: File, accessCode?: string) => void;
+  /** Set when the site is invite-only. Shows the access code field. */
+  accessCodeRequired?: boolean;
+  /** Shows the example report. The link is left out if this is not given. */
+  onShowExample?: () => void;
   busy: boolean;
   /** A problem from the server, such as an unrecognised file. */
   error?: string;
@@ -23,9 +46,18 @@ export function validateFile(file: File): string | null {
   return null;
 }
 
-export function UploadScreen({ onSubmit, busy, error, notice, focusHeading = true }: Props) {
+export function UploadScreen({
+  onSubmit,
+  accessCodeRequired = false,
+  onShowExample,
+  busy,
+  error,
+  notice,
+  focusHeading = true,
+}: Props) {
   const heading = useFocusOnMount<HTMLHeadingElement>(focusHeading);
   const [file, setFile] = useState<File | null>(null);
+  const [code, setCode] = useState(readStoredCode);
   const [problem, setProblem] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -45,10 +77,17 @@ export function UploadScreen({ onSubmit, busy, error, notice, focusHeading = tru
 
   const onFormSubmit = (event: FormEvent): void => {
     event.preventDefault();
-    if (file && !problem) onSubmit(file);
+    if (!file || problem) return;
+    if (accessCodeRequired) {
+      storeCode(code.trim());
+      onSubmit(file, code.trim());
+    } else {
+      onSubmit(file);
+    }
   };
 
   const message = problem ?? error ?? null;
+  const missingCode = accessCodeRequired && code.trim() === "";
 
   return (
     <section aria-labelledby="upload-heading" className="screen">
@@ -59,6 +98,14 @@ export function UploadScreen({ onSubmit, busy, error, notice, focusHeading = tru
         Upload your trade history from your broker. TradeMind looks for three habits and tells you
         what it found. It does not tell you what to buy or sell.
       </p>
+      {onShowExample && (
+        <p>
+          Want to see a report first?{" "}
+          <button type="button" className="link" onClick={onShowExample}>
+            See an example with made-up trades
+          </button>
+        </p>
+      )}
       <ul className="habits">
         <li>Trading a large share of your portfolio</li>
         <li>Selling shares that are up sooner than shares that are down</li>
@@ -108,7 +155,28 @@ export function UploadScreen({ onSubmit, busy, error, notice, focusHeading = tru
           </p>
         )}
 
-        <button type="submit" className="button" disabled={!file || problem !== null || busy}>
+        {accessCodeRequired && (
+          <div className="field">
+            <label htmlFor="access-code">Access code</label>
+            <input
+              id="access-code"
+              type="password"
+              autoComplete="off"
+              value={code}
+              onChange={(event) => setCode(event.target.value)}
+              aria-describedby="access-code-help"
+            />
+            <p id="access-code-help" className="help">
+              This site is invite-only. The code came with your invite.
+            </p>
+          </div>
+        )}
+
+        <button
+          type="submit"
+          className="button"
+          disabled={!file || problem !== null || busy || missingCode}
+        >
           {busy ? "Uploading..." : "Analyse my trades"}
         </button>
       </form>

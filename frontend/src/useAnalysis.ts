@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ApiError, deleteAnalysis, getAnalysis, uploadCsv } from "./api";
+import { ApiError, deleteAnalysis, getAnalysis, getSampleReport, uploadCsv } from "./api";
 import type { Report, Step } from "./types";
 
 export type AnalysisState =
@@ -7,6 +7,7 @@ export type AnalysisState =
   | { kind: "uploading" }
   | { kind: "running"; id: string; step: Step | null }
   | { kind: "done"; id: string; report: Report }
+  | { kind: "example"; report: Report }
   | { kind: "failed"; message: string };
 
 const MAX_POLL_FAILURES = 3;
@@ -17,7 +18,9 @@ export interface AnalysisControls {
   state: AnalysisState;
   /** True once the person has started anything, so later screens can move focus. */
   touched: boolean;
-  start: (file: File) => Promise<void>;
+  start: (file: File, accessCode?: string) => Promise<void>;
+  /** Shows the example report. Its trades are made up. */
+  showExample: () => Promise<void>;
   /** Deletes the report on the server. Returns an error message, or null on success. */
   remove: () => Promise<string | null>;
   reset: () => void;
@@ -79,11 +82,20 @@ export function useAnalysis(pollMs = 1000): AnalysisControls {
     };
   }, [runningId, pollMs]);
 
-  const start = useCallback(async (file: File): Promise<void> => {
+  const showExample = useCallback(async (): Promise<void> => {
+    setTouched(true);
+    try {
+      setState({ kind: "example", report: await getSampleReport() });
+    } catch {
+      setState({ kind: "idle", error: "We couldn't load the example. Please try again." });
+    }
+  }, []);
+
+  const start = useCallback(async (file: File, accessCode?: string): Promise<void> => {
     setTouched(true);
     setState({ kind: "uploading" });
     try {
-      const { id } = await uploadCsv(file);
+      const { id } = await uploadCsv(file, accessCode);
       setState({ kind: "running", id, step: "getting_prices" });
     } catch (error) {
       setState({
@@ -109,5 +121,5 @@ export function useAnalysis(pollMs = 1000): AnalysisControls {
 
   const reset = useCallback((): void => setState({ kind: "idle" }), []);
 
-  return { state, touched, start, remove, reset };
+  return { state, touched, start, showExample, remove, reset };
 }

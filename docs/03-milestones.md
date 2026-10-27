@@ -166,7 +166,7 @@ This is the first point where TradeMind is useful. A good place to pause and dec
 - [ ] **Mazen:** create the Catalyst VM and security group, and point a DNS name at it (`deploy/README.md`, steps 1 to 2).
 - [ ] **Mazen:** run the steps on the VM, then the "Before you invite anyone" checklist (HTTPS grade, headers, port scan).
 - [ ] **Mazen:** add the uptime check.
-- [ ] **Mazen:** settle the market data question (below).
+- [x] Settle the market data question (below): invite-only, built 2026-10-27. Set `ACCESS_CODE` on the server.
 - [ ] The site works at its public URL over HTTPS.
 
 ## M8: Test Users
@@ -179,16 +179,18 @@ This is the first point where TradeMind is useful. A good place to pause and dec
 **Done when:**
 - [ ] Every item in the vision's "Definition of Done for v1" is ticked.
 
-## Open Issue: Market Data for Public Use
+## Decided: Market Data for Public Use (2026-10-27)
 
-The spec says to use Yahoo while building and a licensed provider for the public launch (section 4.2). The tests showed that no free, licensed provider covers several years of ASX, NZX and US prices. Mazen's rule is that v1 costs nothing.
+The spec says to use Yahoo while building and a licensed provider for a public launch (section 4.2). The tests showed that no free, licensed provider covers several years of ASX, NZX and US prices. Mazen's rule is that v1 costs nothing, and those two don't fit together.
 
-These two don't fit together. Options, to decide at M7:
-1. Pay for a provider at launch.
-2. Keep the site invite-only for the 5 test users and treat it as a private test, not a public service.
-3. Limit public use to what a free licensed source covers. This loses NZX or history.
+**Decision: invite-only.** Uploads need an access code, given to the 5 test users. A private test is a smaller step than a public service, though it is still not a licensed use of Yahoo's data. Paying for a provider is left for if the project ever goes public.
 
-- [ ] Decide at M7.
+Mazen's concern was that this makes the project less useful as a portfolio piece. The answer was to keep the project visible without needing market data:
+- The code is public, with tests, CI, docs and screenshots.
+- An **example report** is open to everyone. It is built from made-up trades through the real pipeline (`scripts/make_sample_report.py`), so it needs no market data and no code.
+- Anyone can run the whole thing themselves with their own file.
+
+- [x] Decide (2026-10-27): invite-only, with an open example report.
 
 ## Later (After v1)
 

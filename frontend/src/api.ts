@@ -1,4 +1,4 @@
-import type { Analysis } from "./types";
+import type { Analysis, Report } from "./types";
 
 export class ApiError extends Error {
   readonly code: string;
@@ -39,11 +39,30 @@ async function request(input: string, init?: RequestInit): Promise<Response> {
   return response;
 }
 
-export async function uploadCsv(file: File): Promise<{ id: string }> {
+export async function uploadCsv(file: File, accessCode?: string): Promise<{ id: string }> {
   const body = new FormData();
   body.append("file", file);
-  const response = await request("/api/analyses", { method: "POST", body });
+  const headers: Record<string, string> = {};
+  if (accessCode) headers["X-Access-Code"] = accessCode;
+  const response = await request("/api/analyses", { method: "POST", body, headers });
   return (await response.json()) as { id: string };
+}
+
+/** Whether the site is invite-only. If the server cannot be asked, the form is shown without a code. */
+export async function getConfig(): Promise<{ accessCodeRequired: boolean }> {
+  try {
+    const response = await request("/api/config");
+    const body = (await response.json()) as { access_code_required?: unknown };
+    return { accessCodeRequired: body.access_code_required === true };
+  } catch {
+    return { accessCodeRequired: false };
+  }
+}
+
+/** The example report. Its trades are made up. */
+export async function getSampleReport(): Promise<Report> {
+  const response = await request("/sample-report.json");
+  return (await response.json()) as Report;
 }
 
 export async function getAnalysis(id: string): Promise<Analysis> {

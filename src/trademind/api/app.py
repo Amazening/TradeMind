@@ -4,6 +4,7 @@
     GET    /api/analyses/{id}   status, and the report when done
     DELETE /api/analyses/{id}   delete the upload and report now
     GET    /api/health
+    GET    /api/config          whether the site is invite-only
 
 The file is checked and read as soon as it is uploaded, so a bad file gets an answer straight away.
 Getting prices and finding patterns take longer, so they run in the background.
@@ -12,6 +13,7 @@ Privacy: everything is held in memory (see jobs.py). Logs hold counts and timing
 An error reply never repeats anything from the file.
 """
 
+import hmac
 import logging
 import time
 from collections.abc import Awaitable, Callable
@@ -43,6 +45,7 @@ from trademind.reporting import ChatModel, ExplanationCache, explain_report, exp
 
 logger = logging.getLogger("trademind.api")
 
+ACCESS_CODE_HEADER = "X-Access-Code"
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 _BODY_SLACK_BYTES = 64 * 1024  # multipart framing around the file
 
@@ -57,6 +60,7 @@ def create_app(
     now: Callable[[], datetime] = lambda: datetime.now(UTC),
     static_dir: Path | None = None,
     uploads_per_hour: int | None = None,
+    access_code: str | None = None,
 ) -> FastAPI:
     app = FastAPI(
         title="TradeMind",
@@ -109,7 +113,7 @@ def create_app(
     async def limit_body_and_add_headers(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        response = await _guarded(request, call_next, max_upload_bytes, limiter)
+        response = await _guarded(request, call_next, max_upload_bytes, limiter, access_code)
         return _with_headers(response, request.url.path)
 
     @app.exception_handler(RequestValidationError)
@@ -171,6 +175,11 @@ def create_app(
     def health() -> dict[str, str]:
         return {"status": "ok", "version": __version__}
 
+    @app.get("/api/config")
+    def config() -> dict[str, bool]:
+        """What the web page needs to know before it shows the upload form."""
+        return {"access_code_required": access_code is not None}
+
     # The built frontend. Mounted last so the API routes above take priority.
     if static_dir is not None and (static_dir / "index.html").is_file():
         app.mount("/", StaticFiles(directory=static_dir, html=True), name="frontend")
@@ -183,9 +192,11 @@ async def _guarded(
     call_next: Callable[[Request], Awaitable[Response]],
     max_upload_bytes: int,
     limiter: RateLimiter | None,
+    access_code: str | None,
 ) -> Response:
-    """Refuses an upload from a visitor who has sent too many, that is too big, or that does not
-    say its size. This happens before the file is read."""
+    """Refuses an upload from a visitor who has sent too many, who has no valid access code (when
+    the site is invite-only), that is too big, or that does not say its size. This happens before
+    the file is read. The rate limit comes first, so wrong guesses at the code are counted."""
     if request.method == "POST":
         if limiter is not None:
             address = request.client.host if request.client else "unknown"
@@ -195,6 +206,17 @@ async def _guarded(
                 )
                 response.headers["Retry-After"] = str(limiter.retry_after_seconds(address))
                 return response
+        if access_code is not None:
+            given = request.headers.get(ACCESS_CODE_HEADER)
+            if not given:
+                return _error(
+                    401, "access_code_required", "This site is invite-only. Enter your access code."
+                )
+            # compare_digest takes the same time however much of the code is right
+            if not hmac.compare_digest(given.encode("utf-8"), access_code.encode("utf-8")):
+                return _error(
+                    401, "access_code_invalid", "That access code is not right. Please check it."
+                )
         declared = request.headers.get("content-length")
         if declared is None or not declared.isdigit():
             return _error(411, "length_required", "The upload must say how big it is.")

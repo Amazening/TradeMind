@@ -226,6 +226,40 @@ h3 {
   overflow-wrap: anywhere;
 }
 
+.field {
+  margin: 1rem 0;
+}
+
+.field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.field input {
+  width: 100%;
+  max-width: 22rem;
+  padding: 0.65rem 0.75rem;
+  min-height: 44px;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 2px solid var(--muted);
+  border-radius: 8px;
+}
+
+/* A button that looks like a link, for an action that stays on the page. */
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brand);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .error {
   color: var(--danger);
   font-weight: 600;

@@ -360,6 +360,7 @@ This is the main output of TradeMind.
 | `GET` | `/api/analyses/{id}` | Returns `{ id, status, step, report, error }`. `status` is `queued`, `running`, `done` or `failed`. `step` is `getting_prices`, `finding_patterns` or `writing_explanations` while running |
 | `DELETE` | `/api/analyses/{id}` | Deletes the upload and report now. `204`, or `404` if it is not there |
 | `GET` | `/api/health` | `{ "status": "ok", "version": "..." }` |
+| `GET` | `/api/config` | `{ "access_code_required": true or false }`. The web page asks this before it shows the upload form |
 
 Interactive docs are at `/api/docs`, and the OpenAPI file at `/api/openapi.json`.
 
@@ -387,17 +388,26 @@ Interactive docs are at `/api/docs`, and the OpenAPI file at `/api/openapi.json`
 
 **Hardening in the deployed setup** (see `deploy/`): HTTPS with automatic certificates, HTTP redirected to HTTPS, HSTS, no `Server` header, a 6 MB body limit at the proxy as well as the app's 5 MB, a container with no root, a read-only filesystem, no extra privileges and a memory ceiling, and an app port that only the proxy can reach.
 
-Also add `429 rate_limited` to the error codes above.
+**Invite-only (decided 2026-10-27):** if `ACCESS_CODE` is set, `POST /api/analyses` needs the code in an `X-Access-Code` header.
+- A missing code gives `401 access_code_required`. A wrong one gives `401 access_code_invalid`. Neither reply repeats the code that was sent.
+- The code is compared in constant time, so the time taken does not give hints about how much of it is right.
+- The rate limit is applied first, so wrong guesses count against it (10 an hour per visitor by default).
+- Only uploading needs the code. A report's own id still protects reading and deleting it, and the example report and `/api/health` stay open.
+- Why: the market data source is not licensed for a public app, and a licensed one costs money (section 4.2). A small group of invited testers is a private test.
+- The code is set in `.env` and never logged. The web page shows an access code field only when `/api/config` says one is needed, hides what is typed, and keeps the code for that browser tab only.
+
+The extra error codes are `access_code_required` and `access_code_invalid` (401), and `rate_limited` (429, with a `Retry-After` header).
 
 ## 9. Frontend
 
 Built with React and TypeScript on Vite (`frontend/`). The API serves the built files, so there is one thing to deploy.
 
 Three screens, plus a failure screen:
-1. **Upload:** what it does, the three habits it looks for, a privacy note, export steps per broker, drop zone, Analyse button. A bad file (not `.csv`, empty, over 5 MB) is refused before it is sent. A file the server refuses shows the server's message.
+1. **Upload:** what it does, the three habits it looks for, a link to an example report, a privacy note, export steps per broker, drop zone, an access code field when the site is invite-only, and the Analyse button. A bad file (not `.csv`, empty, over 5 MB) is refused before it is sent. A file the server refuses shows the server's message.
 2. **Progress:** the four steps, each marked done, in progress or waiting, in words as well as by look. Polls `GET /api/analyses/{id}` every second. A check that fails once is tried again. Three in a row, or a `404` (expired), ends in the failure screen.
 3. **Report:** the period and trade counts, one card per finding, data notes (warnings first), the disclaimer, Download report (JSON), Check another file, and Delete my data (asks first).
 4. **Failure:** the reason in plain words, and Try again.
+5. **Example report (added 2026-10-27):** the same report screen, with a note that it is an example with made-up trades, no Delete or Download, and a "Check my own file" button. It is loaded from `frontend/public/sample-report.json`, so it needs no server work, no market data and no access code. It is made by `scripts/make_sample_report.py` from invented shares (`DEMOA` to `DEMOE`) and a seeded random price history, run through the real pipeline, and a test keeps the file valid and made up. The point is that a visitor can see the finished product even though uploads are invite-only.
 
 **A finding card shows:** the title, a result label (Found, Not found or Not enough data, never "good" or "bad"), confidence, the explanation and who wrote it (`AI` or `TradeMind`), the key numbers, the basis and rule, and the trades behind it in a closed section. The explanation is shown one fact per line when the tool wrote it.
 

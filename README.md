@@ -10,7 +10,21 @@ It looks for three habits:
 
 It describes past behaviour. It is not financial advice, and it never says what to buy or sell.
 
-**Status:** version 1 is being built. The command line and the web app work with Sharesies files. Deployment and testing with real users are next. See [`docs/`](docs/) for the vision, the spec and the milestones.
+**Status:** version 1 is built and works with Sharesies files, on the command line and as a web app. Testing with a few invited users is next. See [`docs/`](docs/) for the vision, the spec and the milestones.
+
+## See it
+
+An example report, made from made-up trades (invented shares and a seeded random price history, run through the real code):
+
+![The example report](docs/images/example-report.jpg)
+
+The upload page, and the example on a phone in dark mode:
+
+| Upload (invite-only) | Example on a phone |
+|---|---|
+| ![The upload page](docs/images/upload.jpg) | ![The example report on a phone](docs/images/example-mobile-dark.jpg) |
+
+**The live site is invite-only.** To upload a file, you need an access code. The reason is market data: the prices come from a free source that is not licensed for a public app, and a licensed one costs money. The example report is open to everyone, because it needs no market data. You can run the whole thing yourself, with your own file, using the steps below.
 
 ## How it works
 
@@ -68,6 +82,8 @@ uv run mypy src tests
 ```
 
 For the frontend, from `frontend/`: `npm test`, `npm run lint`, `npm run typecheck`. CI runs everything on every push.
+
+To make the site invite-only, set `ACCESS_CODE` in `.env` before `trademind serve`. To remake the example report: `uv run python scripts/make_sample_report.py` (add `--groq` to have Groq write the explanations).
 
 ## Getting your Sharesies file
 

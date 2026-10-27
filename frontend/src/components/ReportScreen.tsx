@@ -9,6 +9,8 @@ interface Props {
   /** Deletes the report. Returns an error message, or null on success. */
   onDelete: () => Promise<string | null>;
   onReset: () => void;
+  /** True for the example report. Its trades are made up, so there is nothing to delete. */
+  example?: boolean;
 }
 
 export function downloadReport(report: Report): void {
@@ -23,7 +25,7 @@ export function downloadReport(report: Report): void {
   URL.revokeObjectURL(url);
 }
 
-export function ReportScreen({ report, onDelete, onReset }: Props) {
+export function ReportScreen({ report, onDelete, onReset, example = false }: Props) {
   const heading = useFocusOnMount<HTMLHeadingElement>();
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -44,12 +46,20 @@ export function ReportScreen({ report, onDelete, onReset }: Props) {
   return (
     <section aria-labelledby="report-heading" className="screen">
       <h1 id="report-heading" ref={heading} tabIndex={-1}>
-        Your report
+        {example ? "Example report" : "Your report"}
       </h1>
+
+      {example && (
+        <p role="note" className="notice">
+          This is an example. The trades and the shares are made up, so none of it is about you.
+          Upload your own file to see your own report.
+        </p>
+      )}
 
       <p className="lead">
         {formatDate(report.period.start)} to {formatDate(report.period.end)}.{" "}
-        {summary.trades_read} trades, {summary.user_decisions} decisions by you
+        {summary.trades_read} trades, {summary.user_decisions} decisions
+        {example ? "" : " by you"}
         {summary.platform_decisions > 0 && ` and ${summary.platform_decisions} by the platform`}, in{" "}
         {summary.instruments} shares on {summary.markets.join(", ")}.
       </p>
@@ -81,13 +91,21 @@ export function ReportScreen({ report, onDelete, onReset }: Props) {
       <p className="disclaimer">{report.disclaimer}</p>
 
       <div className="actions">
-        <button type="button" className="button" onClick={() => downloadReport(report)}>
-          Download report (JSON)
-        </button>
-        <button type="button" className="button secondary" onClick={onReset}>
-          Check another file
-        </button>
-        {!confirming && (
+        {example ? (
+          <button type="button" className="button" onClick={onReset}>
+            Check my own file
+          </button>
+        ) : (
+          <>
+            <button type="button" className="button" onClick={() => downloadReport(report)}>
+              Download report (JSON)
+            </button>
+            <button type="button" className="button secondary" onClick={onReset}>
+              Check another file
+            </button>
+          </>
+        )}
+        {!example && !confirming && (
           <button type="button" className="button danger" onClick={() => setConfirming(true)}>
             Delete my data
           </button>

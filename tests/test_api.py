@@ -173,6 +173,80 @@ def test_refused_uploads_still_count_and_still_carry_security_headers() -> None:
     assert response.headers["cache-control"] == "no-store"
 
 
+# --- invite-only --------------------------------------------------------------------------
+
+
+def _upload_with_code(client: TestClient, code: str | None) -> Response:
+    headers = {} if code is None else {"X-Access-Code": code}
+    response: Response = client.post(
+        "/api/analyses", files={"file": ("trades.csv", CSV, "text/csv")}, headers=headers
+    )
+    return response
+
+
+def test_an_invite_only_site_refuses_an_upload_with_no_code() -> None:
+    client = _client(access_code="open-sesame")
+
+    response = _upload_with_code(client, None)
+
+    assert response.status_code == 401
+    assert _error(response)["code"] == "access_code_required"
+
+
+def test_an_invite_only_site_refuses_a_wrong_code_and_does_not_echo_it() -> None:
+    client = _client(access_code="open-sesame")
+
+    response = _upload_with_code(client, "guess-123")
+
+    assert response.status_code == 401
+    assert _error(response)["code"] == "access_code_invalid"
+    assert "guess-123" not in response.text
+    assert "open-sesame" not in response.text
+
+
+def test_the_right_code_lets_an_upload_through() -> None:
+    client = _client(access_code="open-sesame")
+
+    response = _upload_with_code(client, "open-sesame")
+
+    assert response.status_code == 202
+    job_id = response.json()["id"]
+    assert client.get(f"/api/analyses/{job_id}").json()["status"] == "done"
+
+
+def test_a_code_that_only_starts_right_is_refused() -> None:
+    client = _client(access_code="open-sesame")
+
+    assert _upload_with_code(client, "open-sesam").status_code == 401
+    assert _upload_with_code(client, "open-sesame!").status_code == 401
+
+
+def test_the_code_is_only_needed_to_upload() -> None:
+    client = _client(access_code="open-sesame")
+    job_id = _upload_with_code(client, "open-sesame").json()["id"]
+
+    assert client.get(f"/api/analyses/{job_id}").status_code == 200
+    assert client.get("/api/health").status_code == 200
+    assert client.delete(f"/api/analyses/{job_id}").status_code == 204
+
+
+def test_without_a_configured_code_no_code_is_needed(client: TestClient) -> None:
+    assert _upload_with_code(client, None).status_code == 202
+
+
+def test_the_page_can_ask_whether_a_code_is_needed() -> None:
+    assert _client(access_code="x").get("/api/config").json() == {"access_code_required": True}
+    assert _client().get("/api/config").json() == {"access_code_required": False}
+
+
+def test_wrong_guesses_count_towards_the_rate_limit() -> None:
+    client = _client(access_code="open-sesame", uploads_per_hour=3)
+
+    codes = [_upload_with_code(client, f"guess-{n}").status_code for n in range(4)]
+
+    assert codes == [401, 401, 401, 429]
+
+
 # --- the frontend and security headers ----------------------------------------------------
 
 

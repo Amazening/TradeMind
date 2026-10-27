@@ -41,9 +41,15 @@ def build_app() -> FastAPI:
             "No built frontend at %s. Only the API is served. Run `npm run build` in frontend/.",
             settings.frontend_dir,
         )
+    code = settings.access_code.get_secret_value() if settings.access_code else ""
+    if code:
+        logger.info("Invite-only: uploads need the access code.")
+    else:
+        logger.info("No ACCESS_CODE set: anyone who can reach the site can upload.")
     return create_app(
         price_source=source,
         chat_model=model,
         static_dir=settings.frontend_dir,
         uploads_per_hour=settings.uploads_per_hour or None,
+        access_code=code or None,
     )

@@ -123,6 +123,44 @@ describe("ReportScreen", () => {
   });
 });
 
+describe("ReportScreen, example", () => {
+  function setupExample() {
+    const onReset = vi.fn();
+    render(<ReportScreen report={report} example onDelete={vi.fn()} onReset={onReset} />);
+    return { onReset };
+  }
+
+  it("says it is an example and that the trades are made up", () => {
+    setupExample();
+
+    expect(screen.getByRole("heading", { level: 1, name: "Example report" })).toHaveFocus();
+    expect(screen.getByRole("note")).toHaveTextContent(/made up/i);
+  });
+
+  it("does not say the decisions are the reader's own", () => {
+    setupExample();
+
+    expect(screen.getByText(/190 decisions/)).toBeInTheDocument();
+    expect(screen.queryByText(/decisions by you/)).not.toBeInTheDocument();
+  });
+
+  it("has no delete or download, and one way to go and try a real file", async () => {
+    const { onReset } = setupExample();
+
+    expect(screen.queryByRole("button", { name: /delete/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /download/i })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /check my own file/i }));
+    expect(onReset).toHaveBeenCalledTimes(1);
+  });
+
+  it("still shows every finding and the disclaimer", () => {
+    setupExample();
+
+    expect(screen.getAllByRole("article")).toHaveLength(3);
+    expect(screen.getByText(report.disclaimer)).toBeInTheDocument();
+  });
+});
+
 describe("FindingCard", () => {
   it("shows the explanation, who wrote it, the numbers and the basis", () => {
     render(<FindingCard finding={overtrading} />);

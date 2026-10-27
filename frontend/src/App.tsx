@@ -3,6 +3,7 @@ import { ProgressScreen } from "./components/ProgressScreen";
 import { ReportScreen } from "./components/ReportScreen";
 import { UploadScreen } from "./components/UploadScreen";
 import { useAnalysis } from "./useAnalysis";
+import { useAccessCodeRequired } from "./useConfig";
 
 interface Props {
   /** How often to ask for progress, in milliseconds. Tests use a small number. */
@@ -10,7 +11,8 @@ interface Props {
 }
 
 export default function App({ pollMs }: Props) {
-  const { state, touched, start, remove, reset } = useAnalysis(pollMs);
+  const { state, touched, start, showExample, remove, reset } = useAnalysis(pollMs);
+  const accessCodeRequired = useAccessCodeRequired();
 
   return (
     <>
@@ -24,6 +26,8 @@ export default function App({ pollMs }: Props) {
         {(state.kind === "idle" || state.kind === "uploading") && (
           <UploadScreen
             onSubmit={start}
+            onShowExample={showExample}
+            accessCodeRequired={accessCodeRequired}
             busy={state.kind === "uploading"}
             focusHeading={touched}
             error={state.kind === "idle" ? state.error : undefined}
@@ -33,6 +37,14 @@ export default function App({ pollMs }: Props) {
         {state.kind === "running" && <ProgressScreen step={state.step} />}
         {state.kind === "done" && (
           <ReportScreen report={state.report} onDelete={remove} onReset={reset} />
+        )}
+        {state.kind === "example" && (
+          <ReportScreen
+            report={state.report}
+            example
+            onDelete={async () => null}
+            onReset={reset}
+          />
         )}
         {state.kind === "failed" && <FailedScreen message={state.message} onRetry={reset} />}
       </main>

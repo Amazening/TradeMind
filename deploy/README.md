@@ -39,7 +39,7 @@ cp .env.example .env
 chmod 600 .env
 nano .env
 ```
-Set `SITE_ADDRESS`. Add `GROQ_API_KEY` if you want AI explanations (otherwise leave it empty).
+Set `SITE_ADDRESS`. Make an access code and put it in `ACCESS_CODE` (the file shows how). Add `GROQ_API_KEY` if you want AI explanations (otherwise leave it empty).
 
 **5. Start it.**
 ```bash
@@ -59,7 +59,10 @@ Add a free check at [UptimeRobot](https://uptimerobot.com) on `https://<your add
 
 ## Before you invite anyone
 
-- [ ] The market data question is settled (see below).
+- [x] The market data question is settled: the site is invite-only (see below).
+- [ ] `ACCESS_CODE` is set in `.env`. Without it the site is open to everyone.
+- [ ] An upload with no code, and with a wrong code, is refused. An upload with the right code gives a report.
+- [ ] The example report opens without a code.
 - [ ] `https://<your address>` loads, and an upload of a test file gives a report.
 - [ ] Delete works, and the old report address then says it was not found.
 - [ ] Uploading more than the limit in an hour gives "Too many uploads".
@@ -76,12 +79,15 @@ Add a free check at [UptimeRobot](https://uptimerobot.com) on `https://<your add
 - Do not put your own real trade history on the server.
 - Do not commit `.env`.
 
-## Market data: still open
+## Market data: decided (2026-10-27)
 
-The app uses Yahoo Finance's unofficial data, which is fine for building and for your own use but is **not licensed for a public app** (spec section 4.2). v1 must cost nothing, and no free licensed source covers ASX, NZX and US shares over several years. Choose one before the public launch:
+The app uses Yahoo Finance's unofficial data. That is fine for building and for a small private test, but it is **not licensed for a public app** (spec section 4.2). v1 must cost nothing, and no free licensed source covers ASX, NZX and US shares over several years.
 
-1. **Pay** for a licensed provider.
-2. **Invite only.** Keep the site private to the 5 test users and treat it as a test, not a public service.
-3. **Reduce coverage** to what a free licensed source offers.
+So the site is **invite-only**:
+- To upload a file, a person needs the access code from `ACCESS_CODE`. Give it to each tester in their invite.
+- The example report is open to everyone. It uses made-up trades and needs no market data, so it is safe to show publicly.
+- Uploads are limited to 10 an hour per visitor, and wrong codes count.
 
-Only option 2 needs no new code. Options 1 and 3 mean writing one new class behind the `PriceSource` interface (`src/trademind/enrichment/source.py`).
+This is a private test for a few people, not a public service. It is still not a licensed use of Yahoo's data, so keep the group small and do not advertise the code.
+
+**To open the site to everyone later,** first pay for a licensed provider. That means writing one new class behind the `PriceSource` interface (`src/trademind/enrichment/source.py`). Only then leave `ACCESS_CODE` empty.

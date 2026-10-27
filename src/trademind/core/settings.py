@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     ollama_model: str = "qwen2.5:14b"
     frontend_dir: Path = Path("frontend/dist")
     uploads_per_hour: int = 10  # per visitor. 0 turns the limit off
+    # If set, the site is invite-only: an upload needs this code in the X-Access-Code header.
+    access_code: SecretStr | None = None
     price_cache_dir: Path = Path(".cache/prices")
     explanation_cache_dir: Path = Path(".cache/explanations")
 

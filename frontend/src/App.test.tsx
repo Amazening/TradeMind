@@ -10,9 +10,14 @@ const POLL_MS = 5;
 type Reply = () => Response;
 
 /** A fake API. `polls` are the replies to GET /api/analyses/abc123, in order. The last repeats. */
-function fakeApi(polls: Reply[], options: { del?: Reply; post?: Reply } = {}) {
+function fakeApi(
+  polls: Reply[],
+  options: { del?: Reply; post?: Reply; codeRequired?: boolean; sample?: Reply } = {},
+) {
   let next = 0;
   return stubFetch((url, init) => {
+    if (url === "/api/config") return json({ access_code_required: options.codeRequired ?? false });
+    if (url === "/sample-report.json") return options.sample ? options.sample() : json(report);
     if (init?.method === "POST") {
       return options.post ? options.post() : json({ id: "abc123", status: "queued" }, 202);
     }
@@ -51,7 +56,8 @@ describe("App", () => {
     expect(screen.getByText("Buying after a sharp rise")).toBeInTheDocument();
     expect(screen.getByText(report.disclaimer)).toBeInTheDocument();
 
-    const [uploadUrl, uploadInit] = fetchMock.mock.calls[0] ?? [];
+    const [uploadUrl, uploadInit] =
+      fetchMock.mock.calls.find(([, init]) => init?.method === "POST") ?? [];
     expect(uploadUrl).toBe("/api/analyses");
     expect(uploadInit?.method).toBe("POST");
     expect(uploadInit?.body).toBeInstanceOf(FormData);
@@ -226,6 +232,8 @@ describe("App", () => {
     await user.tab();
     expect(screen.getByRole("link", { name: /skip to the main content/i })).toHaveFocus();
     await user.tab();
+    expect(screen.getByRole("button", { name: /see an example/i })).toHaveFocus();
+    await user.tab();
     expect(screen.getByLabelText(/choose your csv file/i)).toHaveFocus();
 
     await user.upload(screen.getByLabelText(/choose your csv file/i), csvFile());
@@ -235,6 +243,90 @@ describe("App", () => {
     await user.keyboard("{Enter}");
 
     expect(await screen.findByRole("heading", { name: "Your report" })).toHaveFocus();
+  });
+
+  it("asks for an access code when the site is invite-only, and sends it with the file", async () => {
+    sessionStorage.clear();
+    const fetchMock = fakeApi([done], { codeRequired: true });
+    render(<App pollMs={POLL_MS} />);
+    const user = userEvent.setup();
+
+    const field = await screen.findByLabelText(/access code/i);
+    await user.upload(screen.getByLabelText(/choose your csv file/i), csvFile());
+    expect(screen.getByRole("button", { name: /analyse my trades/i })).toBeDisabled();
+    await user.type(field, "open-sesame");
+    await user.click(screen.getByRole("button", { name: /analyse my trades/i }));
+
+    expect(await screen.findByRole("heading", { name: "Your report" })).toBeInTheDocument();
+    const upload = fetchMock.mock.calls.find(([, init]) => init?.method === "POST");
+    expect(upload?.[1]?.headers).toEqual({ "X-Access-Code": "open-sesame" });
+  });
+
+  it("shows the server's message when the access code is wrong, and keeps the field", async () => {
+    sessionStorage.clear();
+    fakeApi([done], {
+      codeRequired: true,
+      post: () => apiError(401, "access_code_invalid", "That access code is not right. Please check it."),
+    });
+    render(<App pollMs={POLL_MS} />);
+    const user = userEvent.setup();
+
+    await user.type(await screen.findByLabelText(/access code/i), "wrong");
+    await user.upload(screen.getByLabelText(/choose your csv file/i), csvFile());
+    await user.click(screen.getByRole("button", { name: /analyse my trades/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/access code is not right/i);
+    expect(screen.getByLabelText(/access code/i)).toBeInTheDocument();
+  });
+
+  it("does not ask for a code when the site is open", async () => {
+    fakeApi([done], { codeRequired: false });
+    render(<App pollMs={POLL_MS} />);
+
+    await screen.findByRole("heading", { name: /see the habits/i });
+
+    expect(screen.queryByLabelText(/access code/i)).not.toBeInTheDocument();
+  });
+
+  it("shows an example report with a banner, no delete, and a way back, without any code", async () => {
+    const fetchMock = fakeApi([done], { codeRequired: true });
+    render(<App pollMs={POLL_MS} />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: /see an example with made-up trades/i }));
+
+    expect(await screen.findByRole("heading", { name: "Example report" })).toBeInTheDocument();
+    expect(screen.getByRole("note")).toHaveTextContent(/trades and the shares are made up/i);
+    expect(screen.getByText("Trading a large share of the portfolio")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /delete my data/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /download report/i })).not.toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
+
+    await user.click(screen.getByRole("button", { name: /check my own file/i }));
+    expect(screen.getByRole("heading", { name: /see the habits/i })).toBeInTheDocument();
+  });
+
+  it("says so when the example cannot be loaded", async () => {
+    fakeApi([done], { sample: () => new Response("nope", { status: 500 }) });
+    render(<App pollMs={POLL_MS} />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: /see an example with made-up trades/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/couldn't load the example/i);
+  });
+
+  it("has no accessibility problems on the invite-only upload page or the example", async () => {
+    sessionStorage.clear();
+    fakeApi([done], { codeRequired: true });
+    const { container } = render(<App pollMs={POLL_MS} />);
+    const user = userEvent.setup();
+    await screen.findByLabelText(/access code/i);
+    expect((await axe(container)).violations).toEqual([]);
+
+    await user.click(screen.getByRole("button", { name: /see an example with made-up trades/i }));
+    await screen.findByRole("heading", { name: "Example report" });
+    expect((await axe(container)).violations).toEqual([]);
   });
 
   it("does not take focus when the page first loads, but does when a screen changes", async () => {
