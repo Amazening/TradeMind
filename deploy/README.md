@@ -4,6 +4,20 @@ This puts TradeMind on one small server on Catalyst Cloud, using Mazen's persona
 
 **Use a new, separate VM. Do not use the homelab.** TradeMind is public, so it must not share a machine with private services such as the Obsidian sync. A separate VM means a problem in a public app cannot reach them.
 
+## How Mazen's deployment is done (2026-10-30)
+
+Mazen's VM is made and run from his own infrastructure repo, `catalyst-homelab` (Terraform and Ansible, through WSL). The steps below describe the same thing by hand, for anyone else. In that repo:
+
+```bash
+make provision-trademind        # the VM, its firewall, floating IP and Docker disk
+make setup-trademind            # Docker and updates
+make setup-trademind-volumes    # Docker storage on its own disk
+make harden                     # automatic security updates and fail2ban
+make deploy-trademind           # clones this repo, writes the secrets from the vault, starts it
+```
+
+`deploy-trademind` runs the `docker-compose.yml` in this folder as it is. Add `ARGS='-e trademind_site_address=http://<ip>'` for a first test before DNS exists. The access code and Groq key live in that repo's encrypted vault, not here.
+
 ## What runs
 
 Two containers, from `docker-compose.yml`:
