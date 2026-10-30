@@ -309,6 +309,7 @@ def test_responses_carry_security_headers(client: TestClient) -> None:
 
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["referrer-policy"] == "no-referrer"
+    assert "camera=()" in response.headers["permissions-policy"]
     policy = response.headers["content-security-policy"]
     assert "default-src 'self'" in policy
     assert "frame-ancestors 'none'" in policy

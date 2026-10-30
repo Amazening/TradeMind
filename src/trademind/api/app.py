@@ -233,9 +233,14 @@ _CSP = (
 )
 
 
+# The page uses none of the browser's device features, so all of them are switched off.
+_PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+
+
 def _with_headers(response: Response, path: str) -> Response:
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = _PERMISSIONS_POLICY
     if not path.startswith("/api/docs"):  # the interactive docs load scripts from a CDN
         response.headers["Content-Security-Policy"] = _CSP
     if path.startswith("/api/analyses"):
