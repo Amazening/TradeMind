@@ -49,6 +49,33 @@ describe("UploadScreen", () => {
     expect(screen.getByText(/deleted one hour after it is ready/i)).toBeInTheDocument();
   });
 
+  it("has a section on how the data is handled", async () => {
+    setup();
+
+    await userEvent.click(screen.getByText(/how your data is handled/i));
+
+    expect(screen.getByText(/held in memory only/i)).toBeInTheDocument();
+    expect(screen.getByText(/has not had an independent security audit/i)).toBeInTheDocument();
+    expect(screen.getByText(/yahoo finance/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /github.com\/amazening\/trademind/i })).toHaveAttribute(
+      "rel",
+      "noopener noreferrer",
+    );
+  });
+
+  it("only mentions the AI service when one is used", async () => {
+    const { unmount } = setup();
+    await userEvent.click(screen.getByText(/how your data is handled/i));
+    expect(screen.queryByText(/groq/i)).not.toBeInTheDocument();
+    unmount();
+
+    setup({ aiExplanations: true });
+    await userEvent.click(screen.getByText(/how your data is handled/i));
+    expect(screen.getByText(/groq/i)).toBeInTheDocument();
+    expect(screen.getByText(/does not get your trades, share names, dates or amounts/i))
+      .toBeInTheDocument();
+  });
+
   it("has steps for exporting a Sharesies file", async () => {
     setup();
 

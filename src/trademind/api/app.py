@@ -4,7 +4,7 @@
     GET    /api/analyses/{id}   status, and the report when done
     DELETE /api/analyses/{id}   delete the upload and report now
     GET    /api/health
-    GET    /api/config          whether the site is invite-only
+    GET    /api/config          whether the site is invite-only, and whether an AI service is used
 
 The file is checked and read as soon as it is uploaded, so a bad file gets an answer straight away.
 Getting prices and finding patterns take longer, so they run in the background.
@@ -178,7 +178,11 @@ def create_app(
     @app.get("/api/config")
     def config() -> dict[str, bool]:
         """What the web page needs to know before it shows the upload form."""
-        return {"access_code_required": access_code is not None}
+        return {
+            "access_code_required": access_code is not None,
+            # So the page only says an AI service is used when one is.
+            "ai_explanations": chat_model is not None,
+        }
 
     # The built frontend. Mounted last so the API routes above take priority.
     if static_dir is not None and (static_dir / "index.html").is_file():

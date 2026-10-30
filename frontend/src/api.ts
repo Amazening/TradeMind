@@ -48,14 +48,26 @@ export async function uploadCsv(file: File, accessCode?: string): Promise<{ id: 
   return (await response.json()) as { id: string };
 }
 
-/** Whether the site is invite-only. If the server cannot be asked, the form is shown without a code. */
-export async function getConfig(): Promise<{ accessCodeRequired: boolean }> {
+export interface SiteConfig {
+  accessCodeRequired: boolean;
+  /** Whether an AI service words the results. The privacy section only mentions it if so. */
+  aiExplanations: boolean;
+}
+
+/** What the page needs before it shows the form. If the server cannot be asked, assume neither. */
+export async function getConfig(): Promise<SiteConfig> {
   try {
     const response = await request("/api/config");
-    const body = (await response.json()) as { access_code_required?: unknown };
-    return { accessCodeRequired: body.access_code_required === true };
+    const body = (await response.json()) as {
+      access_code_required?: unknown;
+      ai_explanations?: unknown;
+    };
+    return {
+      accessCodeRequired: body.access_code_required === true,
+      aiExplanations: body.ai_explanations === true,
+    };
   } catch {
-    return { accessCodeRequired: false };
+    return { accessCodeRequired: false, aiExplanations: false };
   }
 }
 

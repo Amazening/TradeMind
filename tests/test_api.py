@@ -235,8 +235,15 @@ def test_without_a_configured_code_no_code_is_needed(client: TestClient) -> None
 
 
 def test_the_page_can_ask_whether_a_code_is_needed() -> None:
-    assert _client(access_code="x").get("/api/config").json() == {"access_code_required": True}
-    assert _client().get("/api/config").json() == {"access_code_required": False}
+    assert _client(access_code="x").get("/api/config").json()["access_code_required"] is True
+    assert _client().get("/api/config").json()["access_code_required"] is False
+
+
+def test_the_page_can_ask_whether_an_ai_service_is_used() -> None:
+    with_ai = _client(chat_model=FakeChatModel(["unused"]))
+
+    assert with_ai.get("/api/config").json()["ai_explanations"] is True
+    assert _client().get("/api/config").json()["ai_explanations"] is False
 
 
 def test_wrong_guesses_count_towards_the_rate_limit() -> None:

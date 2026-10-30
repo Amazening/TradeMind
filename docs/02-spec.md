@@ -360,7 +360,7 @@ This is the main output of TradeMind.
 | `GET` | `/api/analyses/{id}` | Returns `{ id, status, step, report, error }`. `status` is `queued`, `running`, `done` or `failed`. `step` is `getting_prices`, `finding_patterns` or `writing_explanations` while running |
 | `DELETE` | `/api/analyses/{id}` | Deletes the upload and report now. `204`, or `404` if it is not there |
 | `GET` | `/api/health` | `{ "status": "ok", "version": "..." }` |
-| `GET` | `/api/config` | `{ "access_code_required": true or false }`. The web page asks this before it shows the upload form |
+| `GET` | `/api/config` | `{ "access_code_required": true or false, "ai_explanations": true or false }`. The web page asks this before it shows the upload form. The second value decides whether the data handling section mentions the AI service |
 
 Interactive docs are at `/api/docs`, and the OpenAPI file at `/api/openapi.json`.
 
@@ -395,6 +395,7 @@ Interactive docs are at `/api/docs`, and the OpenAPI file at `/api/openapi.json`
 - Only uploading needs the code. A report's own id still protects reading and deleting it, and the example report and `/api/health` stay open.
 - Why: the market data source is not licensed for a public app, and a licensed one costs money (section 4.2). A small group of invited testers is a private test.
 - The code is set in `.env` and never logged. The web page shows an access code field only when `/api/config` says one is needed, hides what is typed, and keeps the code for that browser tab only.
+- The upload page has a "How your data is handled" section (added 2026-10-30). It says what is kept and for how long, what goes to Yahoo Finance and to the AI service, who can see a report, the limits of the project, and how to run it locally. Each line must match what the code does, so change the section whenever the data flow changes.
 
 The extra error codes are `access_code_required` and `access_code_invalid` (401), and `rate_limited` (429, with a `Retry-After` header).
 

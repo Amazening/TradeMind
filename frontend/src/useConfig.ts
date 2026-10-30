@@ -1,17 +1,19 @@
 import { useEffect, useState } from "react";
-import { getConfig } from "./api";
+import { getConfig, type SiteConfig } from "./api";
 
-/** Asks the server once whether the site is invite-only. Until it answers, no code is asked for. */
-export function useAccessCodeRequired(): boolean {
-  const [required, setRequired] = useState(false);
+const DEFAULT_CONFIG: SiteConfig = { accessCodeRequired: false, aiExplanations: false };
+
+/** Asks the server once how the site is set up. Until it answers, no code is asked for. */
+export function useSiteConfig(): SiteConfig {
+  const [config, setConfig] = useState(DEFAULT_CONFIG);
   useEffect(() => {
     let cancelled = false;
-    void getConfig().then((config) => {
-      if (!cancelled) setRequired(config.accessCodeRequired);
+    void getConfig().then((answer) => {
+      if (!cancelled) setConfig(answer);
     });
     return () => {
       cancelled = true;
     };
   }, []);
-  return required;
+  return config;
 }

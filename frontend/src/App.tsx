@@ -3,7 +3,7 @@ import { ProgressScreen } from "./components/ProgressScreen";
 import { ReportScreen } from "./components/ReportScreen";
 import { UploadScreen } from "./components/UploadScreen";
 import { useAnalysis } from "./useAnalysis";
-import { useAccessCodeRequired } from "./useConfig";
+import { useSiteConfig } from "./useConfig";
 
 interface Props {
   /** How often to ask for progress, in milliseconds. Tests use a small number. */
@@ -12,7 +12,7 @@ interface Props {
 
 export default function App({ pollMs }: Props) {
   const { state, touched, start, showExample, remove, reset } = useAnalysis(pollMs);
-  const accessCodeRequired = useAccessCodeRequired();
+  const { accessCodeRequired, aiExplanations } = useSiteConfig();
 
   return (
     <>
@@ -28,6 +28,7 @@ export default function App({ pollMs }: Props) {
             onSubmit={start}
             onShowExample={showExample}
             accessCodeRequired={accessCodeRequired}
+            aiExplanations={aiExplanations}
             busy={state.kind === "uploading"}
             focusHeading={touched}
             error={state.kind === "idle" ? state.error : undefined}

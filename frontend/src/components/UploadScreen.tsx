@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
 import { MAX_UPLOAD_BYTES, formatBytes } from "../format";
 import { useFocusOnMount } from "../useFocusOnMount";
+import { DataHandling } from "./DataHandling";
 
 const CODE_KEY = "trademind-access-code";
 
@@ -25,6 +26,8 @@ interface Props {
   onSubmit: (file: File, accessCode?: string) => void;
   /** Set when the site is invite-only. Shows the access code field. */
   accessCodeRequired?: boolean;
+  /** Set when an AI service words the results. The privacy section then says so. */
+  aiExplanations?: boolean;
   /** Shows the example report. The link is left out if this is not given. */
   onShowExample?: () => void;
   busy: boolean;
@@ -49,6 +52,7 @@ export function validateFile(file: File): string | null {
 export function UploadScreen({
   onSubmit,
   accessCodeRequired = false,
+  aiExplanations = false,
   onShowExample,
   busy,
   error,
@@ -188,6 +192,8 @@ export function UploadScreen({
           ready, or when you press Delete.
         </p>
       </aside>
+
+      <DataHandling aiExplanations={aiExplanations} />
 
       <details className="how-to">
         <summary>How do I get my file?</summary>
