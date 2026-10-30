@@ -65,13 +65,13 @@ const METRICS: Record<string, MetricSpec[]> = {
   disposition_effect: [
     { key: "pgr", label: "Winning positions sold", format: fraction },
     { key: "plr", label: "Losing positions sold", format: fraction },
-    { key: "p_value", label: "Chance of a gap this big by luck alone", format: chance },
+    { key: "p_value", label: "Chance of a gap this big or bigger by luck alone", format: chance },
   ],
   run_up_buying: [
     { key: "run_up_share", label: "Buys after a big rise", format: fraction },
     { key: "expected_share", label: "Expected by luck alone", format: fraction },
     { key: "run_up_buys", label: "Number of those buys", format: count },
-    { key: "p_value", label: "Chance of a share this high by luck alone", format: chance },
+    { key: "p_value", label: "Chance of a share this high or higher by luck alone", format: chance },
   ],
 };
 

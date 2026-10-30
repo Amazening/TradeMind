@@ -57,7 +57,10 @@ describe("metricRows", () => {
 
     expect(rows).toContainEqual({ label: "Winning positions sold", value: "10%" });
     expect(rows).toContainEqual({ label: "Losing positions sold", value: "12%" });
-    expect(rows).toContainEqual({ label: "Chance of a gap this big by luck alone", value: "70%" });
+    expect(rows).toContainEqual({
+      label: "Chance of a gap this big or bigger by luck alone",
+      value: "70%",
+    });
   });
 
   it("has no rows when there are no numbers", () => {

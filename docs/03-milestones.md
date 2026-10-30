@@ -50,7 +50,7 @@ M0 to M3 give a working tool from the command line. M4 to M8 turn it into a publ
 **Done when:**
 - [x] All tests pass (2026-10-26: 47 tests, Ruff and mypy clean).
 - [x] Running it on Mazen's real file gives row and trade counts, a date range and an instrument count that match a manual count of the file, with no rows skipped.
-- [ ] Holdings after the last trade match what Sharesies shows. Mazen checks with `uv run trademind enrich data/private/sharesies-transactions.csv --holdings`. (2026-10-30: the first check with `import --holdings` showed one share as open when it had been sold in full. The file holds buys in old shares and sells in new shares from before and after a consolidation, and `import` does not apply splits. `enrich --holdings` does, and `import --holdings` now says so. Rounding after a split can leave a trace of a share, so positions under 0.001 shares count as closed.)
+- [x] Holdings after the last trade match what Sharesies shows (2026-10-30: Mazen confirmed his Sharesies account is empty, as `enrich --holdings` shows). Mazen checks with `uv run trademind enrich data/private/sharesies-transactions.csv --holdings`. (2026-10-30: the first check with `import --holdings` showed one share as open when it had been sold in full. The file holds buys in old shares and sells in new shares from before and after a consolidation, and `import` does not apply splits. `enrich --holdings` does, and `import --holdings` now says so. Rounding after a split can leave a trace of a share, so positions under 0.001 shares count as closed.)
 
 ## M2: Market Prices
 
