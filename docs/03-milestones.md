@@ -165,11 +165,11 @@ This is the first point where TradeMind is useful. A good place to pause and dec
 - [x] A new deploy is one documented command (`docker compose up -d --build`).
 - [x] The Catalyst VM, firewall, floating IP and Docker disk were made with Terraform (2026-10-30), from Mazen's `catalyst-homelab` repo. It is a separate VM, not in the `default` group, not on Tailscale, and SSH is limited to one address.
 - [x] Docker, security updates and fail2ban were set up with Ansible, and TradeMind was deployed. Tested live over plain HTTP on the IP: the invite-only gate works (no code and a wrong code get 401, the right code gets past), the security headers are set, the app's own port is closed from outside, a made-up CSV ran through the full pipeline in 6 seconds with real Yahoo prices, delete worked, and the logs held counts and timings only.
-- [ ] **Mazen:** add an `A` record `trademind.mazenkhallaf.com` → `202.49.241.99` at Namecheap. Then `make deploy-trademind` in the homelab repo gets the HTTPS certificate.
-- [ ] After DNS works: the rest of the "Before you invite anyone" checklist (HTTPS grade, headers over HTTPS, port scan from another network).
+- [x] The `A` record `trademind.mazenkhallaf.com` → `202.49.241.99` was added at Namecheap and `make deploy-trademind` was run again (2026-10-30). Caddy got the HTTPS certificate. HTTP redirects to HTTPS, HSTS and the other security headers are set, and uploads with no code or a wrong code get 401 over HTTPS.
+- [ ] The rest of the "Before you invite anyone" checklist: the HTTPS grade at ssllabs.com and the headers grade at securityheaders.com.
 - [ ] **Mazen:** add the uptime check.
 - [x] Settle the market data question (below): invite-only, built 2026-10-27. Set `ACCESS_CODE` on the server.
-- [ ] The site works at its public URL over HTTPS.
+- [x] The site works at its public URL over HTTPS (2026-10-30): `https://trademind.mazenkhallaf.com` answers `/api/health` with 200 and a certificate that verifies.
 
 ## M8: Test Users
 
