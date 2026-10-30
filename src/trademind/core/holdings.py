@@ -16,6 +16,11 @@ from trademind.core.models import Side, Trade
 
 _ROUNDING_TOLERANCE = Decimal("0.000001")
 
+# Quantities in a broker file have a few decimal places. After a split or consolidation the
+# rounding can leave a trace of a share that was in fact sold in full. Under this size a position
+# is not open.
+_DUST_QUANTITY = Decimal("0.001")
+
 PositionKey = tuple[str, str]
 
 
@@ -52,7 +57,7 @@ class Ledger:
 
     def positions(self) -> dict[PositionKey, Position]:
         """Open positions only."""
-        return {key: pos for key, pos in self._positions.items() if pos.quantity > 0}
+        return {key: pos for key, pos in self._positions.items() if pos.quantity > _DUST_QUANTITY}
 
     def apply(self, trade: Trade) -> None:
         key = (trade.market, trade.symbol)

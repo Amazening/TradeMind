@@ -91,7 +91,7 @@ uv run mypy src tests
 uv run trademind serve
 ```
 
-Other commands: `trademind import <file> [--holdings]`, `trademind enrich <file>`, and `trademind analyse <file> [--format text] [--explain groq|ollama]`. The API docs are at http://127.0.0.1:8000/api/docs.
+Other commands: `trademind import <file> [--holdings]` (amounts as written in the file, no splits applied), `trademind enrich <file> [--holdings]` (holdings after splits), and `trademind analyse <file> [--format text] [--explain groq|ollama]`. The API docs are at http://127.0.0.1:8000/api/docs.
 
 The frontend is in `frontend/`. Node 24. From that folder:
 

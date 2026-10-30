@@ -90,12 +90,21 @@ def import_(
 
     if holdings:
         typer.echo("")
-        typer.echo("Open positions (average cost includes buy fees, in the trade currency):")
-        for (market, symbol), position in sorted(ledger.positions().items()):
-            typer.echo(
-                f"  {market}:{symbol}  {position.quantity.normalize():f} shares  "
-                f"avg cost {position.avg_cost:.4f}"
-            )
+        _echo_positions(ledger)
+        typer.echo(
+            "These amounts are as written in your file. A share split or consolidation is not "
+            "applied here, so a share that had one can show the wrong amount. Use "
+            "`trademind enrich <file> --holdings` for the amounts after splits."
+        )
+
+
+def _echo_positions(ledger: Ledger) -> None:
+    typer.echo("Open positions (average cost includes buy fees, in the trade currency):")
+    for (market, symbol), position in sorted(ledger.positions().items()):
+        typer.echo(
+            f"  {market}:{symbol}  {position.quantity.normalize():f} shares  "
+            f"avg cost {position.avg_cost:.4f}"
+        )
 
 
 @app.command()
@@ -190,6 +199,9 @@ def analyse(
 def enrich(
     path: Annotated[Path, typer.Argument(exists=True, dir_okay=False, readable=True)],
     no_cache: Annotated[bool, typer.Option(help="Ignore the price cache.")] = False,
+    holdings: Annotated[
+        bool, typer.Option(help="Also list open positions, after share splits.")
+    ] = False,
 ) -> None:
     """Read a broker CSV, add market prices, and print how well each share is covered."""
     history = _enriched(path, no_cache)
@@ -220,3 +232,7 @@ def enrich(
     typer.echo(f"Data notes: {len(history.data_notes)}")
     for note in history.data_notes:
         typer.echo(f"  [{note.level}] {note.message}")
+
+    if holdings:
+        typer.echo("")
+        _echo_positions(Ledger.from_trades(history.trades))

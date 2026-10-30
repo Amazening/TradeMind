@@ -69,6 +69,24 @@ def test_selling_everything_closes_the_position() -> None:
     assert ledger.warnings == []
 
 
+def test_a_trace_of_a_share_left_by_rounding_is_not_an_open_position() -> None:
+    ledger = Ledger.from_trades(
+        [
+            make_trade(1, "2024-01-01T00:00:00", quantity="10.0000"),
+            make_trade(2, "2024-01-02T00:00:00", side=Side.SELL, quantity="9.9999"),
+        ]
+    )
+
+    assert ledger.position("ASX", "AAA").quantity == Decimal("0.0001")
+    assert ledger.positions() == {}
+
+
+def test_a_small_but_real_position_is_open() -> None:
+    ledger = Ledger.from_trades([make_trade(1, quantity="0.5")])
+
+    assert list(ledger.positions()) == [("ASX", "AAA")]
+
+
 def test_same_symbol_on_two_markets_is_two_positions() -> None:
     ledger = Ledger.from_trades(
         [

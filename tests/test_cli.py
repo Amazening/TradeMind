@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -8,6 +9,7 @@ from tests.fakes import FakePriceSource, daily
 from tests.helpers import sharesies_csv, sharesies_row
 from trademind import __version__
 from trademind.cli import app
+from trademind.core.models import Split
 from trademind.enrichment import PriceHistory
 
 runner = CliRunner()
@@ -60,6 +62,40 @@ def test_import_holdings_lists_open_positions(tmp_path: Path) -> None:
     assert result.exit_code == 0
     assert "ASX:AAA  10 shares  avg cost 2.0000" in result.stdout
     assert "BBB" not in result.stdout
+    assert "split or consolidation is not applied here" in result.stdout
+
+
+def test_enrich_holdings_applies_share_splits(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # 100 shares bought before a 1:25 consolidation are 4 afterwards, and all 4 are then sold.
+    consolidation = Split(date=date(2024, 6, 1), numerator=Decimal(1), denominator=Decimal(25))
+    fake = FakePriceSource(
+        {
+            "ASX:AAA": PriceHistory(
+                currency="AUD", closes=daily(date(2023, 1, 1), 800), splits=[consolidation]
+            )
+        }
+    )
+    monkeypatch.setattr("trademind.cli.YahooPriceSource", lambda: fake)
+    file = tmp_path / "trades.csv"
+    file.write_text(
+        sharesies_csv(
+            sharesies_row("T1", "2024-03-04 02:00:00 (UTC)", quantity="100", price="0.08"),
+            sharesies_row(
+                "T2", "2024-07-01 02:00:00 (UTC)", kind="SELL", quantity="4", price="2.00"
+            ),
+        ),
+        encoding="utf-8",
+    )
+
+    raw = runner.invoke(app, ["import", str(file), "--holdings"])
+    adjusted = runner.invoke(app, ["enrich", str(file), "--no-cache", "--holdings"])
+
+    assert "ASX:AAA  96 shares" in raw.stdout
+    assert adjusted.exit_code == 0
+    assert "Open positions" in adjusted.stdout
+    assert "ASX:AAA  " not in adjusted.stdout.split("Open positions")[1]
 
 
 def test_import_reports_unrecognised_files(tmp_path: Path) -> None:
