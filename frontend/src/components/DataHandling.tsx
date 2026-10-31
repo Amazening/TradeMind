@@ -47,6 +47,14 @@ export function DataHandling({ aiExplanations }: Props) {
         share the link.
       </p>
 
+      <h3>Feedback</h3>
+      <p>
+        Nothing is sent to the person who runs the site unless you send it. On your report page you
+        can make a short summary of how your file was read. It has counts only, with no share names,
+        dates or amounts. You can read it, then copy it or save it, and send it yourself if you
+        want to.
+      </p>
+
       <h3>Limits</h3>
       <p>
         This is a personal project run by one person. It has not had an independent security

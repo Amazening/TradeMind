@@ -1,6 +1,6 @@
 [project]
 name = "trademind"
-version = "0.1.0"
+version = "0.2.0"
 description = "Finds behaviour patterns in a share trading history."
 readme = "README.md"
 authors = [

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { formatDate } from "../format";
 import type { Report } from "../types";
 import { useFocusOnMount } from "../useFocusOnMount";
+import { FeedbackPanel } from "./FeedbackPanel";
 import { FindingCard } from "./FindingCard";
 
 interface Props {
@@ -89,6 +90,9 @@ export function ReportScreen({ report, onDelete, onReset, example = false }: Pro
       )}
 
       <p className="disclaimer">{report.disclaimer}</p>
+      <p className="meta">Made by TradeMind version {report.tool_version}.</p>
+
+      {!example && <FeedbackPanel report={report} />}
 
       <div className="actions">
         {example ? (

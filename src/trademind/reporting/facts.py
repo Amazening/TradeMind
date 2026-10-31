@@ -28,9 +28,10 @@ def _overtrading(finding: Finding) -> list[str]:
     return [
         f"The tool compared {m['months']:.0f} months in which your portfolio was worth at least "
         "NZ$500.",
-        f"Each month you traded about {_percent(m['avg_monthly_turnover_pct'])} of your "
-        f"portfolio on average. Over a year that adds up to about "
-        f"{_percent(m['annualised_turnover_pct'])}.",
+        f"Each month, the smaller of what you bought and what you sold was about "
+        f"{_percent(m['avg_monthly_turnover_pct'])} of your portfolio on average. Over a year "
+        f"that adds up to about {_percent(m['annualised_turnover_pct'])}.",
+        "Money you add and then buy shares with is not counted, because it is not sold.",
         "A large study of US households called more than 8.8% a month frequent trading.",
         f"This is based on {finding.sample.decisions} of your own buy and sell decisions.",
         _conclusion(

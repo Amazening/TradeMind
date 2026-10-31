@@ -6,6 +6,7 @@ command line all start from it.
 
 from datetime import UTC, datetime
 
+from trademind import __version__
 from trademind.analysis import disposition, overtrading, runup
 from trademind.core.models import (
     EnrichedHistory,
@@ -15,7 +16,7 @@ from trademind.core.models import (
     ReportSummary,
 )
 
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "1.1"
 DISCLAIMER = "This report describes past trading behaviour. It is not financial advice."
 
 
@@ -24,6 +25,7 @@ def analyse(history: EnrichedHistory, now: datetime | None = None) -> Report:
     user = sum(1 for d in history.decisions if d.initiated_by == InitiatedBy.USER)
     return Report(
         schema_version=SCHEMA_VERSION,
+        tool_version=__version__,
         generated_at=now or datetime.now(UTC),
         broker=history.broker,
         period=ReportPeriod(
@@ -44,5 +46,6 @@ def analyse(history: EnrichedHistory, now: datetime | None = None) -> Report:
             runup.detect(history),
         ],
         data_notes=history.data_notes,
+        diagnostics=history.diagnostics,
         disclaimer=DISCLAIMER,
     )

@@ -49,12 +49,33 @@ class SkippedRow(BaseModel):
     reason: str
 
 
+class FileDiagnostics(BaseModel):
+    """Counts about how a file was read. They hold no share names, dates or amounts.
+
+    A tester can send these to the developer to show what their file looked like (spec section
+    6.3). `initiated_by` uses "you" for the investor's own name, so the name is never shown.
+    Labels from the file other than the investor's own name are kept as written.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    rows_read: int
+    rows_skipped: int
+    skipped_reasons: dict[str, int]
+    transaction_methods: dict[str, int]
+    initiated_by: dict[str, int]
+    small_buys: dict[str, int]  # buys worth under 1 in their own currency, by who started them
+    shares_without_market_prices: int = 0
+    shares_adjusted_for_splits: int = 0
+
+
 class ImportResult(BaseModel):
     """What ingestion hands to enrichment."""
 
     broker: str
     trades: list[Trade]
     skipped_rows: list[SkippedRow]
+    diagnostics: FileDiagnostics | None = None
 
 
 class Decision(BaseModel):
@@ -123,6 +144,7 @@ class EnrichedHistory(BaseModel):
     fx_to_nzd: dict[str, dict[date, Decimal]]
     missing_prices: list[str]
     data_notes: list[DataNote]
+    diagnostics: FileDiagnostics | None = None
 
 
 PatternResult = Literal["detected", "not_detected", "insufficient_data"]
@@ -190,10 +212,12 @@ class Report(BaseModel):
     """The main output of TradeMind (spec section 6.3). Everything else is built from this."""
 
     schema_version: str
+    tool_version: str
     generated_at: AwareDatetime
     broker: str
     period: ReportPeriod
     summary: ReportSummary
     findings: list[Finding]
     data_notes: list[DataNote]
+    diagnostics: FileDiagnostics | None = None
     disclaimer: str

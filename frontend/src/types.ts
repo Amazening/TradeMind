@@ -27,8 +27,21 @@ export interface DataNote {
   message: string;
 }
 
+/** Counts about how the file was read. No share names, dates or amounts. */
+export interface FileDiagnostics {
+  rows_read: number;
+  rows_skipped: number;
+  skipped_reasons: Record<string, number>;
+  transaction_methods: Record<string, number>;
+  initiated_by: Record<string, number>;
+  small_buys: Record<string, number>;
+  shares_without_market_prices: number;
+  shares_adjusted_for_splits: number;
+}
+
 export interface Report {
   schema_version: string;
+  tool_version: string;
   generated_at: string;
   broker: string;
   period: { start: string; end: string };
@@ -42,6 +55,7 @@ export interface Report {
   };
   findings: Finding[];
   data_notes: DataNote[];
+  diagnostics: FileDiagnostics | null;
   disclaimer: string;
 }
 

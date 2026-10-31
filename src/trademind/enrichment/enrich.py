@@ -127,6 +127,15 @@ def enrich(result: ImportResult, source: PriceSource) -> EnrichedHistory:
 
     fx = _fetch_fx({trade.currency for trade in trades}, source, start, last_day, notes)
 
+    diagnostics = result.diagnostics
+    if diagnostics is not None:
+        diagnostics = diagnostics.model_copy(
+            update={
+                "shares_without_market_prices": len(set(missing)),
+                "shares_adjusted_for_splits": len(splits),
+            }
+        )
+
     return EnrichedHistory(
         broker=result.broker,
         trades=adjusted,
@@ -136,6 +145,7 @@ def enrich(result: ImportResult, source: PriceSource) -> EnrichedHistory:
         fx_to_nzd=fx,
         missing_prices=sorted(missing),
         data_notes=notes,
+        diagnostics=diagnostics,
     )
 
 

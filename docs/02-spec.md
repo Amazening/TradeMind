@@ -145,7 +145,7 @@ Only user decisions are judged. Platform trades are left out.
 
 **Measure:** monthly turnover, as defined by Barber and Odean (checked against the paper on 2026-10-26).
 - For each month, purchase turnover = value of the user's buys in the month ÷ portfolio value at the start of the month. Sales turnover is the same with the user's sells. The paper reports the two separately (means of 6.49% and 6.23% a month).
-- Monthly turnover = the average of purchase turnover and sales turnover.
+- Monthly turnover = the smaller of purchase turnover and sales turnover. This is how funds report turnover. The paper takes the average. **Found while testing (v0.2.0):** a tester who bought NZ$200 of a fund every week for 7 months and never sold scored 18% a month, and the pattern was found. Money added to the account is bought and never sold, so the average counts saving as trading. A made-up weekly saver in the tests (30 weekly buys, no sells) gave 18.18% with the average and gives 0% with the smaller figure. The 8.8% line was set by the paper using the average, so it is a looser test now: a month needs both buys and sells to score.
 - Yearly turnover = average monthly turnover × 12.
 - Portfolio value is holdings × closing prices, converted to NZD. Platform trades count towards holdings. Shares without market prices are valued at the last own trade price.
 - Differences from the paper: trades are valued at the trade price (the paper uses the start-of-month price), and months that start with a portfolio under NZ$500 are left out. A new investor adding money to a tiny portfolio shows huge turnover that says nothing about trading habits. Months are calendar months by market date, and the start-of-month holdings use UTC month boundaries.
@@ -159,7 +159,7 @@ Only user decisions are judged. Platform trades are left out.
 
 **Limit:** turnover does not say why someone traded. Selling a share that fails a halal screen, moving between brokers, and rebalancing all count as turnover. The report states what happened and does not claim a motive.
 
-**Evidence:** the 3 months with the highest turnover, and the 5 largest decisions in each.
+**Evidence:** the 3 months with the highest turnover (months with no turnover are left out), and the 5 largest decisions in each.
 
 ### 5.2 Disposition Effect
 
@@ -290,7 +290,8 @@ This is the main output of TradeMind.
 
 ```json
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
+  "tool_version": "0.2.0",
   "generated_at": "2026-10-24T10:00:00Z",
   "broker": "sharesies",
   "period": { "start": "2022-02-01", "end": "2025-01-31" },
@@ -331,7 +332,9 @@ This is the main output of TradeMind.
 - `confidence`: `low`, `medium`, `high`, or `null` when there is not enough data.
 - `explanation`: filled in by the explanation step. `null` if that step was not run.
 - `explained_by`: `"ai"` for a model's rewording of the facts, `"tool"` for text written by code (used when the model fails or is rejected, and for "not enough data").
-- `schema_version` changes when the shape changes, so API users know.
+- `schema_version` changes when the shape changes, so API users know. It went from 1.0 to 1.1 when `tool_version` was added (v0.2.0).
+- `tool_version` is the version of TradeMind that made the report (see `CHANGELOG.md`). It lets a person tell which rules produced a result, since the rules change between versions.
+- `diagnostics` (added v0.2.0, can be `null`): counts about how the file was read, with no share names, dates or amounts. `rows_read`, `rows_skipped`, `skipped_reasons` (reason without the value from the file, except for unknown methods and markets), `transaction_methods` (the "Transaction method" values), `initiated_by` (the "Initiated by" values, with the investor's own name shown as `you`, which is the most common value that is not System or Operator), `small_buys` (buys worth under 1 in their own currency, by who started them), `shares_without_market_prices` and `shares_adjusted_for_splits`. Other labels in "Initiated by" are kept as written, because an unknown label is what a developer needs to see. A second name on a joint account would show.
 
 ## 7. AI Explanations
 
@@ -409,6 +412,8 @@ Three screens, plus a failure screen:
 3. **Report:** the period and trade counts, one card per finding, data notes (warnings first), the disclaimer, Download report (JSON), Check another file, and Delete my data (asks first).
 4. **Failure:** the reason in plain words, and Try again.
 5. **Example report (added 2026-10-27):** the same report screen, with a note that it is an example with made-up trades, no Delete or Download, and a "Check my own file" button. It is loaded from `frontend/public/sample-report.json`, so it needs no server work, no market data and no access code. It is made by `scripts/make_sample_report.py` from invented shares (`DEMOA` to `DEMOE`) and a seeded random price history, run through the real pipeline, and a test keeps the file valid and made up. The point is that a visitor can see the finished product even though uploads are invite-only.
+
+6. **Feedback summary (added v0.2.0, opt-in):** a closed section at the foot of a real report (not the example), "Help improve TradeMind (optional)". It builds a short text summary in the browser from the report, shows all of it, and lets the person add a comment, then **Copy summary** or **Save as text file**. Nothing is sent from the page, and the server stores nothing new, so the "nothing is saved" promise still holds. The person sends it themselves to whoever gave them the code. The summary holds the tool and report versions, the broker, the history length in months, counts of trades, decisions, shares and markets, the counts in `diagnostics` (below), each result with its confidence and sample size, the number of data notes, and the comment. It never holds share names, dates, amounts, metrics or the text of data notes, and a test checks this. Reason: a tester reported that a count looked wrong, and what was needed to find out was how Sharesies had labelled the rows, not the trades. The upload page's "How your data is handled" section has a Feedback paragraph that says the same. Levels that were left out for now: sending the report JSON, and sending the CSV (spec for those would need stored data, a collection notice and a deletion path).
 
 **A finding card shows:** the title, a result label (Found, Not found or Not enough data, never "good" or "bad"), confidence, the explanation and who wrote it (`AI` or `TradeMind`), the key numbers, the basis and rule, and the trades behind it in a closed section. The explanation is shown one fact per line when the tool wrote it.
 

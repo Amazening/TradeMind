@@ -26,7 +26,7 @@ describe("ReportScreen", () => {
     const quiet = { ...report, summary: { ...report.summary, platform_decisions: 0 } };
     render(<ReportScreen report={quiet} onDelete={vi.fn()} onReset={vi.fn()} />);
 
-    expect(screen.queryByText(/by the platform/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/decisions by you and \d+ by the platform/)).not.toBeInTheDocument();
   });
 
   it("shows one card per finding with a result label", () => {
@@ -53,6 +53,12 @@ describe("ReportScreen", () => {
     setup();
 
     expect(screen.getByText(report.disclaimer)).toBeInTheDocument();
+  });
+
+  it("says which version of TradeMind made the report", () => {
+    setup();
+
+    expect(screen.getByText("Made by TradeMind version 0.2.0.")).toBeInTheDocument();
   });
 
   it("starts again when asked", async () => {

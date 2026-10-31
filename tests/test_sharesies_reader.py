@@ -5,7 +5,7 @@ import pytest
 
 from tests.helpers import SHARESIES_HEADER, sharesies_csv, sharesies_row
 from trademind.core.errors import NoTradesError, UnrecognisedBrokerError
-from trademind.core.models import ImportResult, InitiatedBy, Side
+from trademind.core.models import FileDiagnostics, ImportResult, InitiatedBy, Side
 from trademind.ingestion import import_csv
 
 
@@ -170,3 +170,59 @@ def test_result_serialises_to_json_with_decimals_as_strings() -> None:
     assert trade["side"] == "buy"
     assert trade["executed_at"].startswith("2024-03-04T02:15:30.123456")
     assert ImportResult.model_validate(data) == result
+
+
+def _diagnostics(*rows: str) -> FileDiagnostics:
+    diagnostics = import_csv(sharesies_csv(*rows)).diagnostics
+    assert diagnostics is not None
+    return diagnostics
+
+
+def test_diagnostics_count_rows_and_methods() -> None:
+    diagnostics = _diagnostics(
+        sharesies_row(trade_id="T1"),
+        sharesies_row(trade_id="T2", kind="SELL"),
+        sharesies_row(trade_id="T3", kind="DIVIDEND"),
+        sharesies_row(trade_id="T4", quantity="abc"),
+    )
+
+    assert diagnostics.rows_read == 4
+    assert diagnostics.rows_skipped == 2
+    assert diagnostics.transaction_methods == {"BUY": 2, "DIVIDEND": 1, "SELL": 1}
+    assert diagnostics.skipped_reasons == {
+        "Quantity is not a number": 1,
+        "Unknown transaction method: DIVIDEND": 1,
+    }
+
+
+def test_diagnostics_never_show_the_investors_name() -> None:
+    diagnostics = _diagnostics(
+        sharesies_row(trade_id="T1", actor="Sam"),
+        sharesies_row(trade_id="T2", actor="Sam"),
+        sharesies_row(trade_id="T3", actor="System"),
+        sharesies_row(trade_id="T4", actor="Round-up"),
+    )
+
+    assert diagnostics.initiated_by == {"Round-up": 1, "System": 1, "you": 2}
+    assert "Sam" not in diagnostics.model_dump_json()
+
+
+def test_diagnostics_count_small_buys_by_who_started_them() -> None:
+    diagnostics = _diagnostics(
+        sharesies_row(trade_id="T1", quantity="0.05", price="4.00", actor="Sam"),  # worth 0.20
+        sharesies_row(trade_id="T2", quantity="0.05", price="4.00", actor="Sam"),
+        sharesies_row(trade_id="T3", quantity="0.05", price="4.00", actor="System"),
+        sharesies_row(trade_id="T4", quantity="10", price="4.00", actor="Sam"),  # worth 40
+        sharesies_row(trade_id="T5", kind="SELL", quantity="0.05", price="4.00", actor="Sam"),
+    )
+
+    assert diagnostics.small_buys == {"System": 1, "you": 2}
+
+
+def test_diagnostics_hold_no_share_names_dates_or_amounts() -> None:
+    row = sharesies_row(code="QQQX", name="Secret Holdings", date="2024-03-04 02:15:30 (UTC)")
+
+    text = _diagnostics(row).model_dump_json()
+
+    for value in ("QQQX", "Secret", "2024", "2.50", "T1"):
+        assert value not in text

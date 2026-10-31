@@ -1,10 +1,13 @@
 """Overtrading (spec section 5.1): does the investor trade a large share of the portfolio?
 
 Measure, after Barber and Odean (2000): for each month, purchases and sales are each divided by the
-portfolio value at the start of the month. Monthly turnover is the average of the two. The
-paper's most active fifth of households traded above 8.8% a month.
+portfolio value at the start of the month. The paper's most active fifth of households traded above
+8.8% a month.
 
 Differences from the paper:
+- Monthly turnover is the smaller of the two, as funds report it. The paper takes the average.
+  Money added to the account is bought and never sold, so a person who buys a fixed amount each
+  week has no turnover. With the average, they scored about 18% a month (spec section 5.1).
 - Trades are valued at the trade price. The paper values them at the start-of-month price.
 - Months that start with a portfolio under NZ$500 are left out. A new investor adding money to a
   tiny portfolio would show huge turnover that says nothing about trading habits.
@@ -90,7 +93,7 @@ def detect(history: EnrichedHistory) -> Finding:
             (values.get(d.id, Decimal(0)) for d in month_decisions if d.side == Side.SELL),
             Decimal(0),
         )
-        turnover = float((bought + sold) / 2 / start_value)
+        turnover = float(min(bought, sold) / start_value)
         months.append(_Month(start, turnover, month_decisions, values))
 
     notes = _notes(history, small_months, unpriced_decisions)
@@ -143,7 +146,8 @@ def _value_nzd(valuer: Valuer, decision: Decision) -> Decimal | None:
 
 
 def _evidence(months: list[_Month]) -> list[Evidence]:
-    busiest = sorted(months, key=lambda m: m.turnover, reverse=True)[:EVIDENCE_MONTHS]
+    active = [m for m in months if m.turnover > 0]
+    busiest = sorted(active, key=lambda m: m.turnover, reverse=True)[:EVIDENCE_MONTHS]
     evidence: list[Evidence] = []
     for month in busiest:
         buys = sum(1 for d in month.decisions if d.side == Side.BUY)
@@ -152,7 +156,7 @@ def _evidence(months: list[_Month]) -> list[Evidence]:
             Evidence(
                 decision_id=None,
                 note=(
-                    f"{month.start:%B %Y}: {month.turnover:.1%} of the portfolio traded "
+                    f"{month.start:%B %Y}: {month.turnover:.1%} of the portfolio turned over "
                     f"({buys} buys, {sells} sells)"
                 ),
             )

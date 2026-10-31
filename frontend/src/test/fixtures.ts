@@ -48,7 +48,8 @@ export const runUp: Finding = {
 };
 
 export const report: Report = {
-  schema_version: "1.0",
+  schema_version: "1.1",
+  tool_version: "0.2.0",
   generated_at: "2026-10-26T09:00:00Z",
   broker: "sharesies",
   period: { start: "2022-02-01", end: "2025-01-31" },
@@ -65,6 +66,16 @@ export const report: Report = {
     { level: "info", message: "ASX:ABC: 8 trades before 2024-06-03 were adjusted for a 1:10 share split." },
     { level: "warning", message: "No market prices for ASX:XYZ. Only your own trade prices are used." },
   ],
+  diagnostics: {
+    rows_read: 415,
+    rows_skipped: 3,
+    skipped_reasons: { "Unknown transaction method: DIVIDEND": 3 },
+    transaction_methods: { BUY: 300, DIVIDEND: 3, SELL: 111, "TRANSFER OUT": 1 },
+    initiated_by: { Operator: 1, System: 19, you: 395 },
+    small_buys: { System: 12, you: 40 },
+    shares_without_market_prices: 1,
+    shares_adjusted_for_splits: 1,
+  },
   disclaimer: "This report describes past trading behaviour. It is not financial advice.",
 };
 

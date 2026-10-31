@@ -1,6 +1,7 @@
 {
-  "schema_version": "1.0",
-  "generated_at": "2026-10-27T01:23:16.728240Z",
+  "schema_version": "1.1",
+  "tool_version": "0.2.0",
+  "generated_at": "2026-10-31T05:03:41.970828Z",
   "broker": "sharesies",
   "period": {
     "start": "2022-03-07",
@@ -27,31 +28,15 @@
         "cases": 37
       },
       "metrics": {
-        "avg_monthly_turnover_pct": 39.78,
-        "annualised_turnover_pct": 477.32,
+        "avg_monthly_turnover_pct": 18.12,
+        "annualised_turnover_pct": 217.49,
         "months": 37.0
       },
       "threshold": "Average monthly turnover above 8.8%",
       "evidence": [
         {
           "decision_id": null,
-          "note": "April 2025: 114.2% of the portfolio traded (3 buys, 0 sells)"
-        },
-        {
-          "decision_id": "d-69",
-          "note": "Bought ASX:DEMOD on 2025-04-30"
-        },
-        {
-          "decision_id": "d-67",
-          "note": "Bought ASX:DEMOA on 2025-04-07"
-        },
-        {
-          "decision_id": "d-68",
-          "note": "Bought ASX:DEMOE on 2025-04-16"
-        },
-        {
-          "decision_id": null,
-          "note": "March 2023: 100.9% of the portfolio traded (3 buys, 2 sells)"
+          "note": "March 2023: 87.5% of the portfolio turned over (3 buys, 2 sells)"
         },
         {
           "decision_id": "d-24",
@@ -75,20 +60,48 @@
         },
         {
           "decision_id": null,
-          "note": "July 2022: 99.3% of the portfolio traded (2 buys, 0 sells)"
+          "note": "April 2023: 63.1% of the portfolio turned over (2 buys, 3 sells)"
         },
         {
-          "decision_id": "d-6",
-          "note": "Bought ASX:DEMOC on 2022-07-11"
+          "decision_id": "d-30",
+          "note": "Sold ASX:DEMOD on 2023-04-24"
         },
         {
-          "decision_id": "d-7",
-          "note": "Bought ASX:DEMOD on 2022-07-25"
+          "decision_id": "d-32",
+          "note": "Sold ASX:DEMOB on 2023-04-28"
+        },
+        {
+          "decision_id": "d-29",
+          "note": "Bought ASX:DEMOD on 2023-04-03"
+        },
+        {
+          "decision_id": "d-28",
+          "note": "Sold ASX:DEMOE on 2023-04-03"
+        },
+        {
+          "decision_id": "d-31",
+          "note": "Bought ASX:DEMOE on 2023-04-25"
+        },
+        {
+          "decision_id": null,
+          "note": "May 2023: 58.8% of the portfolio turned over (2 buys, 1 sells)"
+        },
+        {
+          "decision_id": "d-35",
+          "note": "Sold ASX:DEMOC on 2023-05-05"
+        },
+        {
+          "decision_id": "d-33",
+          "note": "Bought ASX:DEMOB on 2023-05-01"
+        },
+        {
+          "decision_id": "d-34",
+          "note": "Bought ASX:DEMOD on 2023-05-02"
         }
       ],
       "notes": [],
-      "explanation": "The tool looked at 37 months where your portfolio was worth at least NZ$500. You traded about 40% of your portfolio on average each month, which adds up to roughly 477% over a year. This is based on 71 of your own buy and sell decisions. Since your figure is higher than the 8.8% threshold, the pattern of trading a large share of your portfolio was found.",
-      "explained_by": "ai"
+      "explanation": "The tool compared 37 months in which your portfolio was worth at least NZ$500.\nEach month, the smaller of what you bought and what you sold was about 18% of your portfolio on average. Over a year that adds up to about 217%.\nMoney you add and then buy shares with is not counted, because it is not sold.\nA large study of US households called more than 8.8% a month frequent trading.\nThis is based on 71 of your own buy and sell decisions.\nYour figure is more than 8.8% a month, so this pattern was found.",
+      "explained_by": "tool"
     },
     {
       "pattern": "disposition_effect",
@@ -137,8 +150,8 @@
         }
       ],
       "notes": [],
-      "explanation": "You sold 55% of your winning positions but only 1.8% of your losing ones across 37 sales. This difference is larger than what would happen by chance, so the pattern of selling winners sooner than losers was detected.",
-      "explained_by": "ai"
+      "explanation": "This is based on 37 times you sold a share.\nOn those days, you sold 55% of the winning positions you held and 1.8% of the losing positions you held.\nThe gap in favour of selling winners is bigger than luck would explain, so this pattern was found.",
+      "explained_by": "tool"
     },
     {
       "pattern": "run_up_buying",
@@ -175,10 +188,11 @@
         }
       ],
       "notes": [],
-      "explanation": "We looked at 39 of your buys that had a full year of earlier prices to check for a pattern. Four of them, or 10%, happened right after a big rise in the share's price. Since about 10% of buys would happen after a big rise by luck alone, your results are not more than chance. This means the pattern of buying after a sharp rise was not detected.",
-      "explained_by": "ai"
+      "explanation": "This is based on 39 of your buys that had a full year of earlier prices.\n4 of them (10%) came right after a big rise in the share's price.\nA big rise means one in the top 10% of that share's rises over the year before.\nBy luck alone, about 10% of buys would come after a big rise.\nYour share is not more than luck would explain, so this pattern was not found.",
+      "explained_by": "tool"
     }
   ],
   "data_notes": [],
+  "diagnostics": null,
   "disclaimer": "This report describes past trading behaviour. It is not financial advice."
 }

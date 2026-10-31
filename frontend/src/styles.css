@@ -236,7 +236,8 @@ h3 {
   margin-bottom: 0.3rem;
 }
 
-.field input {
+.field input,
+.field textarea {
   width: 100%;
   max-width: 22rem;
   padding: 0.65rem 0.75rem;
@@ -246,6 +247,11 @@ h3 {
   background: var(--surface);
   border: 2px solid var(--muted);
   border-radius: 8px;
+}
+
+.field textarea {
+  max-width: 100%;
+  resize: vertical;
 }
 
 /* A button that looks like a link, for an action that stays on the page. */
@@ -275,7 +281,8 @@ h3 {
 
 .privacy,
 .how-to,
-.data-handling {
+.data-handling,
+.feedback {
   margin-top: 1.5rem;
   padding: 0.9rem 1rem;
   background: var(--surface);
@@ -293,9 +300,32 @@ h3 {
 }
 
 .how-to summary,
-.data-handling summary {
+.data-handling summary,
+.feedback summary {
   cursor: pointer;
   font-weight: 600;
+}
+
+.feedback p {
+  margin: 0.75rem 0 0;
+}
+
+.feedback h3 {
+  margin: 1rem 0 0.25rem;
+  font-size: 1rem;
+}
+
+.feedback-text {
+  margin: 0;
+  padding: 0.75rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
 }
 
 .data-handling h3 {

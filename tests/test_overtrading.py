@@ -1,6 +1,8 @@
 """Overtrading scenarios. The portfolio is 100 shares at 10, worth 1,000, with flat prices."""
 
-from datetime import date
+from datetime import date, timedelta
+
+import pytest
 
 from tests.scenarios import flat, history_of, nzx_trade
 from trademind.analysis import overtrading
@@ -136,9 +138,46 @@ def test_evidence_names_the_busiest_months() -> None:
     months = [e for e in finding.evidence if e.decision_id is None]
     decisions = [e for e in finding.evidence if e.decision_id is not None]
     assert len(months) == 3
-    assert "20.0% of the portfolio traded (1 buys, 1 sells)" in months[0].note
+    assert "20.0% of the portfolio turned over (1 buys, 1 sells)" in months[0].note
     assert decisions
     assert all(e.note.startswith(("Bought NZX:AAA", "Sold NZX:AAA")) for e in decisions)
+
+
+def _weekly_saver(weeks: int, *, quantity: str = "20") -> list[Trade]:
+    """Buys 20 shares at 10 (200 in value) every 7 days from 2 January 2023, and never sells."""
+    return [
+        nzx_trade(n, date(2023, 1, 2) + timedelta(days=7 * (n - 1)), quantity=quantity)
+        for n in range(1, weeks + 1)
+    ]
+
+
+def test_a_weekly_saver_who_never_sells_has_no_turnover() -> None:
+    # Found with a tester who bought 200 a week for 7 months. Averaging buys and sells gave 18.18%
+    # a month and the pattern was found. Money added and invested is not trading.
+    trades = _weekly_saver(30)
+
+    finding = overtrading.detect(history_of(trades, {"NZX:AAA": flat()}))
+
+    assert finding.result == "not_detected"
+    assert finding.metrics["avg_monthly_turnover_pct"] == 0.0
+    assert finding.evidence == []
+
+
+def test_turnover_is_the_smaller_of_buys_and_sells() -> None:
+    # 100 shares at 10 is worth 1,000. Each month buys 300 and sells 100: the smaller is 10%.
+    trades = _start_position()
+    n = 2
+    for month in range(2, 10):
+        trades.append(nzx_trade(n, date(2023, month, 10), quantity="30"))
+        trades.append(nzx_trade(n + 1, date(2023, month, 11), side=Side.SELL, quantity="10"))
+        n += 2
+
+    finding = overtrading.detect(history_of(trades, {"NZX:AAA": flat()}))
+
+    # The portfolio grows by 200 a month, so the start values are 1,000 to 2,400 and the monthly
+    # turnover falls from 10% to 4.2%. The average of the eight months is 6.37%.
+    assert finding.result == "not_detected"
+    assert finding.metrics["avg_monthly_turnover_pct"] == pytest.approx(6.37, abs=0.01)
 
 
 def test_shares_without_market_prices_add_a_note_and_use_the_last_trade_price() -> None:

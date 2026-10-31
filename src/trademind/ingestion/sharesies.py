@@ -9,12 +9,20 @@ Rules (spec section 3):
 
 import csv
 import io
+from collections import Counter
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 
 from trademind.core.markets import is_known_market
-from trademind.core.models import ImportResult, InitiatedBy, Side, SkippedRow, Trade
+from trademind.core.models import (
+    FileDiagnostics,
+    ImportResult,
+    InitiatedBy,
+    Side,
+    SkippedRow,
+    Trade,
+)
 
 NAME = "sharesies"
 
@@ -42,6 +50,9 @@ _SIDES = {
 
 _PLATFORM_ACTORS = {"system", "operator"}
 
+# A buy worth less than this in its own currency counts as "small" in the diagnostics.
+_SMALL_BUY = Decimal(1)
+
 
 class _RowError(Exception):
     """A row that cannot be used. The message is shown to the user."""
@@ -58,12 +69,18 @@ def parse(text: str) -> ImportResult:
     trades: list[Trade] = []
     skipped: list[SkippedRow] = []
     seen_ids: set[str] = set()
+    methods: Counter[str] = Counter()
+    actors: list[str] = []
+    small_buy_actors: list[str] = []
 
     for values in reader:
         row = reader.line_num
         if not any(value.strip() for value in values):
             continue
         record = dict(zip(header, values, strict=False))
+        methods[record.get("Transaction method", "").strip().upper() or "(blank)"] += 1
+        actor = record.get("Initiated by", "").strip()
+        actors.append(actor)
         try:
             trade = _parse_row(row, record)
             if trade.source_id in seen_ids:
@@ -73,9 +90,43 @@ def parse(text: str) -> ImportResult:
             continue
         seen_ids.add(trade.source_id)
         trades.append(trade)
+        if trade.side == Side.BUY and trade.quantity * trade.price < _SMALL_BUY:
+            small_buy_actors.append(actor)
 
     trades.sort(key=lambda t: (t.executed_at, t.id))
-    return ImportResult(broker=NAME, trades=trades, skipped_rows=skipped)
+    diagnostics = FileDiagnostics(
+        rows_read=len(actors),
+        rows_skipped=len(skipped),
+        skipped_reasons=_sorted_counts(Counter(_reason_group(s.reason) for s in skipped)),
+        transaction_methods=_sorted_counts(methods),
+        initiated_by=_sorted_counts(Counter(_actor_labels(actors))),
+        small_buys=_sorted_counts(Counter(_actor_labels(actors, small_buy_actors))),
+    )
+    return ImportResult(broker=NAME, trades=trades, skipped_rows=skipped, diagnostics=diagnostics)
+
+
+def _actor_labels(all_actors: list[str], chosen: list[str] | None = None) -> list[str]:
+    """Label each actor for the diagnostics. The investor's own name becomes "you".
+
+    The investor's name is the most common label that is not System or Operator.
+    """
+    own = Counter(a for a in all_actors if a and a.lower() not in _PLATFORM_ACTORS)
+    own_name = own.most_common(1)[0][0] if own else None
+    return [
+        "you" if actor == own_name else (actor or "(blank)")
+        for actor in (all_actors if chosen is None else chosen)
+    ]
+
+
+def _reason_group(reason: str) -> str:
+    """A skipped row's reason without the value from the file, except labels that help."""
+    if reason.startswith(("Unknown transaction method", "Unknown market")):
+        return reason
+    return reason.split(":", 1)[0]
+
+
+def _sorted_counts(counts: Counter[str]) -> dict[str, int]:
+    return dict(sorted(counts.items()))
 
 
 def _parse_row(row: int, record: dict[str, str]) -> Trade:

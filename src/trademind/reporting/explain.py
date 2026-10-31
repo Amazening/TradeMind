@@ -55,7 +55,8 @@ PATTERNS: dict[str, PatternInfo] = {
     "overtrading": PatternInfo(
         what=(
             "Overtrading means trading a large share of the portfolio each month. This tool "
-            "flags average monthly turnover above 8.8%."
+            "flags average monthly turnover above 8.8%. Turnover is the smaller of what you "
+            "bought and what you sold, so money you add and invest does not count."
         ),
         needs="at least 6 months with a portfolio worth NZ$500 or more, and 10 decisions in them",
     ),

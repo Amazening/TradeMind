@@ -7,6 +7,7 @@ from typer.testing import CliRunner
 from tests.fakes import FakePriceSource, daily
 from tests.helpers import sharesies_csv, sharesies_row
 from tests.scenarios import flat, history_of, nzx_trade
+from trademind import __version__
 from trademind.analysis import DISCLAIMER, SCHEMA_VERSION, analyse
 from trademind.cli import app
 from trademind.core.models import DataNote, Report
@@ -29,7 +30,8 @@ def _report(**kwargs: object) -> Report:
 def test_report_has_the_summary_period_and_three_findings_in_order() -> None:
     report = _report()
 
-    assert report.schema_version == SCHEMA_VERSION == "1.0"
+    assert report.schema_version == SCHEMA_VERSION == "1.1"
+    assert report.tool_version == __version__
     assert report.generated_at == NOW
     assert report.broker == "test"
     assert (report.period.start, report.period.end) == (date(2023, 1, 2), date(2023, 2, 2))

@@ -23,6 +23,7 @@ Mazen's own project notes are in his Obsidian vault at `1 Projects/TradeMind.md`
 - Test against Mazen's real export (`data/private/`) before calling a data-handling change finished. Checks on real data have found problems that hand-made tests did not (a provider's prices being wrong, a missed share consolidation, a model inventing details).
 - Ask Mazen before making product decisions. Give a recommendation, not a list of every option.
 - Commit when Mazen asks, or when he has asked for a milestone to be completed.
+- **Versions and the changelog (set 2026-10-31).** Every change that alters what a report says or the numbers in it gets a line in `CHANGELOG.md` under `[Unreleased]`, in the same commit. When a set of changes is released, rename that heading to the new version and date, set the same version in `pyproject.toml`, `frontend/package.json` and `frontend/package-lock.json` (a test checks all of them), run `uv sync`, and tag the commit `vX.Y.Z`. While the version is below 1.0, a minor bump is for a change to what a report says, and a patch bump is for a fix that changes no result. Each report carries `tool_version`. If the shape of the report changes, bump `SCHEMA_VERSION` too. Regenerate the example report (`scripts/make_sample_report.py`) when a result changes.
 
 ## Product Rules
 

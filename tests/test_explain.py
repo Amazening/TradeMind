@@ -78,7 +78,8 @@ def _runup_insufficient() -> Finding:
 
 def _report() -> Report:
     return Report(
-        schema_version="1.0",
+        schema_version="1.1",
+        tool_version="0.2.0",
         generated_at=datetime(2026, 10, 26, tzinfo=UTC),
         broker="sharesies",
         period=ReportPeriod(start=date(2021, 6, 28), end=date(2026, 10, 21)),

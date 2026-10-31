@@ -57,6 +57,8 @@ describe("UploadScreen", () => {
     expect(screen.getByText(/held in memory only/i)).toBeInTheDocument();
     expect(screen.getByText(/has not had an independent security audit/i)).toBeInTheDocument();
     expect(screen.getByText(/yahoo finance/i)).toBeInTheDocument();
+    expect(screen.getByText(/nothing is sent to the person who runs the site unless you send it/i))
+      .toBeInTheDocument();
     expect(screen.getByRole("link", { name: /github.com\/amazening\/trademind/i })).toHaveAttribute(
       "rel",
       "noopener noreferrer",
